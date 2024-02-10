@@ -1,0 +1,11 @@
+# This requirements file lists all third-party dependencies for this project.
+#
+# Run 'pip install -r requirements.txt'
+
+fastapi
+result4utility
+pymongo[srv]
+wheel
+uvicorn[standard]
+pydantic
+pydantic-settings
