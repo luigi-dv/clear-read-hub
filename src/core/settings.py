@@ -19,6 +19,11 @@ class CoreSettings(BaseSettings, object):
     DB_SERVER_HOST: str = Field(default='', env='DB_SERVER_HOST')
     DB_USER: str = Field(default='', env='DB_USER')
     DB_PASSWORD: str = Field(default='', env='DB_PASSWORD')
+    # Azure
+    AZ_STORAGE_ACCOUNT_NAME: str = Field(default='', env='AZ_STORAGE_ACCOUNT_NAME')
+    AZ_STORAGE_ACCOUNT_KEY: str = Field(default='', env='AZ_STORAGE_ACCOUNT_KEY')
+    AZ_STORAGE_CONNECTION_STRING: str = Field(default='', env='AZ_STORAGE_CONNECTION_STRING')
+    AZ_STORAGE_CONTAINER_NAME: str = Field(default='', env='AZ_STORAGE_CONTAINER_NAME')
     # CORS
     APP_CONSUMER_ORIGIN: str = Field(default='', env='APP_CONSUMER_ORIGIN')
 

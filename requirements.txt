@@ -2,10 +2,14 @@
 #
 # Run 'pip install -r requirements.txt'
 
+azure-storage-blob
 fastapi
-result4utility
 pymongo[srv]
-wheel
-uvicorn[standard]
 pydantic
 pydantic-settings
+python-multipart
+PyPDF2
+result4utility
+uvicorn[standard]
+wheel
+
