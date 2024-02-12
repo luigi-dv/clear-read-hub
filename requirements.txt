@@ -4,6 +4,7 @@
 
 azure-storage-blob
 fastapi
+sentry-sdk[fastapi]
 pymongo[srv]
 pydantic
 pydantic-settings

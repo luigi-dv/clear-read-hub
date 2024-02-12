@@ -3,12 +3,9 @@
 
 __author__ = 'luigelo@ldvloper.com'
 
-from starlette import status
-
-from src.module.infrastructure.api_responses.error_response import ErrorResponse
-from src.module.infrastructure.api_responses.forbidden_response import ForbiddenResponse
-from src.module.infrastructure.api_responses.not_found_response import NotFoundResponse
-from src.module.infrastructure.api_responses.success_response import SuccessResponse
+import sentry_sdk
+from sentry_sdk.integrations.fastapi import FastApiIntegration
+from sentry_sdk.integrations.starlette import StarletteIntegration
 
 """
     Global Modules
@@ -22,6 +19,11 @@ from fastapi.openapi.utils import get_openapi
 from src.core.settings import coresettings
 
 """
+    Infrastructure Modules
+"""
+from src.module.infrastructure.logging.sentry_logging import SentryLogger
+
+"""
     Tools Modules
 """
 
@@ -29,15 +31,50 @@ from src.core.settings import coresettings
 # response_file = load_config()
 # settings = Reader(config_file=response_file)
 
-app = FastAPI(
-    title=coresettings.SERVICE_NAME,
-    description=coresettings.SERVICE_DESCRIPTION,
-    version=coresettings.SERVICE_VERSION,
-)
+
+def get_application() -> FastAPI:
+    # FastAPI
+    app = __initialize_application()
+    # OpenAPI
+    app.openapi = __custom_openapi(app)
+    return app
+
+
+def __initialize_application() -> FastAPI:
+    # Initialize Sentry
+    sentry_sdk.init(
+        dsn=coresettings.SENTRY_DSN,
+        # Set traces_sample_rate to 1.0 to capture 100%
+        enable_tracing=True,
+        traces_sample_rate=1.0,
+        profiles_sample_rate=1.0,
+        integrations=[
+            StarletteIntegration(
+                transaction_style="endpoint"
+            ),
+            FastApiIntegration(
+                transaction_style="endpoint"
+            ),
+        ]
+    )
+
+    # FastAPI
+    app = FastAPI(
+        title=coresettings.SERVICE_NAME,
+        description=coresettings.SERVICE_DESCRIPTION,
+        version=coresettings.SERVICE_VERSION,
+    )
+
+    # Add Sentry Middleware
+    sentry_logger = SentryLogger(app)
+    sentry_logger.add_sentry_middleware()
+
+    # Return FastAPI
+    return app
 
 
 # OpenAPI
-def custom_openapi(custom_app: FastAPI):
+def __custom_openapi(custom_app: FastAPI):
     def wrapper():
         if custom_app.openapi_schema:
             return custom_app.openapi_schema
@@ -59,9 +96,3 @@ def custom_openapi(custom_app: FastAPI):
         return custom_app.openapi_schema
 
     return wrapper
-
-
-
-app.openapi = custom_openapi(app)
-
-

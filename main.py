@@ -1,16 +1,19 @@
 """
     Global Modules
 """
+import sentry_sdk
 import uvicorn
+from sentry_sdk.integrations.fastapi import FastApiIntegration
+from sentry_sdk.integrations.starlette import StarletteIntegration
 
 """
     API Modules
 """
 from src.routers.routes import router
-from src.core.globals import app
+from src.core.globals import get_application
 
 # Add explicit app name
-app = app
+app = get_application()
 
 # Add the routes to the app
 app.include_router(router)

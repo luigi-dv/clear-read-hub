@@ -3,57 +3,56 @@
 
 __author__ = 'luigelo@ldvloper.com'
 
-from src.module.infrastructure.external_services.azure_storage.blob_sas import AzureStorageBlobSas
+from sentry_sdk import capture_exception
 
 """
     Global Modules
 """
 import PyPDF2
-from fastapi import UploadFile, File
-
+from fastapi import UploadFile, HTTPException
 
 """
-    Core Settings
+    Domain Entities
 """
-from src.core.settings import coresettings
-
+from src.module.domain.entities.File import File
 
 """
     External Services
 """
-from src.module.infrastructure.external_services.azure_storage.file_uploader import AzureStorageFileUploader
 from src.module.infrastructure.external_services.azure_storage.container_client import AzureStorageContainerClient
+from src.module.infrastructure.external_services.azure_storage.blob_sas import AzureStorageBlobSas
+from src.module.infrastructure.external_services.azure_storage.interfaces.file_interface import AzureStorageFileInterface
 
 
 class DocumentService:
-    def __init__(self,
-                 account_name=coresettings.AZ_STORAGE_ACCOUNT_NAME,
-                 account_key=coresettings.AZ_STORAGE_ACCOUNT_KEY,
-                 connection_string=coresettings.AZ_STORAGE_CONNECTION_STRING,
-                 container_name=coresettings.AZ_STORAGE_CONTAINER_NAME):
-        self.account_name = account_name
-        self.account_key = account_key
-        self.connection_string = connection_string
-        self.container_name = container_name
-        self.uploader = AzureStorageFileUploader(connection_string)
+    def __init__(self):
+        self.repository = AzureStorageFileInterface()
 
     async def get_file_url(self, file_name):
-        container_client = AzureStorageContainerClient(self.connection_string, self.container_name)
+        container_client = AzureStorageContainerClient().client
         # Get the blob client
         blob_client = container_client.container_client.get_blob_client(file_name)
-        # Create a new instance of the AzureStorageBlobSas class
-        print("account key:" + self.account_key)
-        azure_blob_sas = AzureStorageBlobSas(blob_client, self.account_key)
+        azure_blob_sas = AzureStorageBlobSas(blob_client)
 
         # Return the blob URL with the SAS token
         return azure_blob_sas.generate_read_sas()
 
-    async def upload_file(self, file: UploadFile = File(...)):
-        # Upload the file
-        container_client = AzureStorageContainerClient(self.connection_string, self.container_name)
-        blob_url = self.uploader.upload_file(await file.read(), container_client.container_name, file.filename)
-        # Return the blob URL
-        return {"url": blob_url, "filename": file.filename, "status": "success"}
+    async def upload_file(self, file: UploadFile):
+        # Create a File class instance from the UploadFile instance
+        my_file = File(file)
+        # Validate the file
+        try:
+            await my_file.validate()
+            # Upload the file
+            blob_client = await self.repository.save(my_file)
+            # Return the blob URL
+            return {"url": await self.repository.get_sas_token_url(blob_client), "filename": file.filename,
+                    "status": "success"}
+        except ValueError as e:
+            # Log the error
+            capture_exception(error=e)
+            # Raise an HTTPException
+            raise HTTPException(status_code=400, detail=str(e))
 
     @staticmethod
     def extract_text_from_pdf(file_path):
