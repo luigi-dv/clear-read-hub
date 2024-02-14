@@ -16,7 +16,7 @@ from fastapi.openapi.utils import get_openapi
 """
     Core Modules
 """
-from src.core.settings import coresettings
+from src.service_config import serviceConfig
 
 """
     Infrastructure Modules
@@ -43,7 +43,7 @@ def get_application() -> FastAPI:
 def __initialize_application() -> FastAPI:
     # Initialize Sentry
     sentry_sdk.init(
-        dsn=coresettings.SENTRY_DSN,
+        dsn=serviceConfig.SENTRY_DSN,
         # Set traces_sample_rate to 1.0 to capture 100%
         enable_tracing=True,
         traces_sample_rate=1.0,
@@ -60,9 +60,9 @@ def __initialize_application() -> FastAPI:
 
     # FastAPI
     app = FastAPI(
-        title=coresettings.SERVICE_NAME,
-        description=coresettings.SERVICE_DESCRIPTION,
-        version=coresettings.SERVICE_VERSION,
+        title=serviceConfig.SERVICE_NAME,
+        description=serviceConfig.SERVICE_DESCRIPTION,
+        version=serviceConfig.SERVICE_VERSION,
     )
 
     # Add Sentry Middleware

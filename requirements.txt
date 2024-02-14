@@ -2,15 +2,22 @@
 #
 # Run 'pip install -r requirements.txt'
 
-azure-storage-blob
+
+# Core dependencies
+wheel
+uvicorn[standard]
+python-multipart
+# FastAPI dependencies
 fastapi
-sentry-sdk[fastapi]
-pymongo[srv]
 pydantic
 pydantic-settings
-python-multipart
-PyPDF2
 result4utility
-uvicorn[standard]
-wheel
-
+# Infrastructure and persistence dependencies
+pymongo[srv]
+# External services dependencies
+redis
+azure-storage-blob
+# Logging dependencies
+sentry-sdk[fastapi]
+# Text Processing dependencies
+PyPDF2

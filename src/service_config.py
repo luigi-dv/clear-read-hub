@@ -10,7 +10,7 @@ from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
 
 
-class CoreSettings(BaseSettings, object):
+class ServiceConfig(BaseSettings, object):
     # SERVICE
     SERVICE_NAME: str = Field(default='Clear Read Hub Service', env='SERVICE_NAME')
     SERVICE_DESCRIPTION: str = Field(default='Clear Read Hub is a Platform for readability', env='SERVICE_DESCRIPTION')
@@ -57,4 +57,4 @@ class CoreSettings(BaseSettings, object):
         case_sensitive = True
 
 
-coresettings = CoreSettings()
+serviceConfig = ServiceConfig()

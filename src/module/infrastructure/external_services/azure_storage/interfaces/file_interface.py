@@ -1,23 +1,11 @@
 from azure.storage.blob import BlobClient
 
-from src.module.infrastructure.external_services.azure_storage.blob_sas import AzureStorageBlobSas
-
-"""
-    API Modules
-"""
-from src.core.settings import coresettings
-
-"""
-    Infrastructure Modules
-"""
+from src.service_config import serviceConfig
+from src.module.domain.entities.File import File
+from src.module.domain.repositories.FileRepository import FileRepository
 from src.module.infrastructure.external_services.azure_storage.container_client import AzureStorageContainerClient
 from src.module.infrastructure.external_services.azure_storage.file_uploader import AzureStorageFileUploader
-
-"""
-    Domain Modules
-"""
-from src.module.domain.repositories.FileRepository import FileRepository
-from src.module.domain.entities.File import File
+from src.module.infrastructure.external_services.azure_storage.blob_sas import AzureStorageBlobSas
 
 
 class AzureStorageFileInterface(FileRepository):
@@ -25,7 +13,7 @@ class AzureStorageFileInterface(FileRepository):
         pass
 
     async def save(self, file: File) -> BlobClient:
-        uploader = AzureStorageFileUploader(coresettings.AZ_STORAGE_CONNECTION_STRING)
+        uploader = AzureStorageFileUploader(serviceConfig.AZ_STORAGE_CONNECTION_STRING)
         container_client = AzureStorageContainerClient().client
         # Upload the file
         blob_client = uploader.upload_file(file.content.read(), container_client.container_name, file.filename)
