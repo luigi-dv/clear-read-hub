@@ -31,6 +31,20 @@ pip install -r requirements.txt
 uvicorn main:app --reload
 ```
 
+### Docker
+
+You can also run the application using Docker.
+
+```bash
+# Build the image
+docker build -t clear-read-hub:latest .
+# Run the container
+docker run -p 8000:8000 clear-read-hub:latest
+# Run the container in detached mode
+docker run -d -p 8000:8000 clear-read-hub:latest
+ ```
+
+
 ## Running the tests
 
 Explain how to run the automated tests for this system.
