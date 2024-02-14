@@ -2,10 +2,22 @@
 #
 # Run 'pip install -r requirements.txt'
 
-fastapi
-result4utility
-pymongo[srv]
+
+# Core dependencies
 wheel
 uvicorn[standard]
+python-multipart
+# FastAPI dependencies
+fastapi
 pydantic
 pydantic-settings
+result4utility
+# Infrastructure and persistence dependencies
+pymongo[srv]
+# External services dependencies
+redis
+azure-storage-blob
+# Logging dependencies
+sentry-sdk[fastapi]
+# Text Processing dependencies
+PyPDF2

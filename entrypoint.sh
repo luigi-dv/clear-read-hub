@@ -1,10 +1,11 @@
 #!/bin/sh
 
-export $(id)
-echo "default:x:$uid:0:user for openshift:/tmp:/bin/bash" >> /etc/passwd
+# Openshift runs containers as a random uid for security reasons
+# uid=$(id -u)
+# echo "default:x:$uid:0:user for openshift:/tmp:/bin/bash" >> /etc/passwd
+# set -e
 
-set -e
-
+# Start Gunicorn
 echo "Starting Unicorn ..."
 exec uvicorn 'main:app' \
     --host '0.0.0.0' \
