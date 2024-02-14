@@ -1,5 +1,7 @@
 # Clear Read Hub
 
+[![Clear Read Hub Docker Build](https://github.com/luigi-dv/clear-read-hub/actions/workflows/docker-image.yml/badge.svg)](https://github.com/luigi-dv/clear-read-hub/actions/workflows/docker-image.yml)
+
 Clear Read Hub is a microservice architecture application built with FastAPI, following the principles of Domain-Driven Design (DDD).
 
 ## Getting Started
