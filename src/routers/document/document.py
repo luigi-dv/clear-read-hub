@@ -30,6 +30,10 @@ class Document:
         return document.router
 
     def get_customized_router(self):
+        """
+        Customized router for Document.
+        :return:
+        """
 
         @self.router.get("")
         async def get_document(file_name: str):

@@ -1,18 +1,22 @@
 from pymongo import MongoClient
 
-
-def get_database():
-    # Provide the mongodb atlas url to connect python to mongodb using pymongo
-    CONNECTION_STRING = "mongodb+srv://user:pass@cluster.mongodb.net/myFirstDatabase"
-
-    # Create a connection using MongoClient. You can import MongoClient or use pymongo.MongoClient
-    client = MongoClient(CONNECTION_STRING)
-
-    # Create the database for our example (we will use the same database throughout the tutorial
-    return client['user_shopping_list']
+# Import the service config file
+from src.service_config import serviceConfig
 
 
-# This is added so that many files can reuse the function get_database()
+class DatabaseContext:
+    def __init__(self):
+        self.client = MongoClient(serviceConfig.MONGO_INITDB_CONNECTION_STRING)
+        self.database = self.client[serviceConfig.MONGO_DATABASE_NAME]
+
+    def get_client(self):
+        return self.client
+
+    def get_database(self):
+        return self.database
+
+
 if __name__ == "__main__":
-    # Get the database
-    dbname = get_database()
+    db_client = DatabaseContext()
+    main_database = db_client.get_database()
+
