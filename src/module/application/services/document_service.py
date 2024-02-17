@@ -14,7 +14,7 @@ from fastapi import UploadFile, HTTPException
 """
     Domain Entities
 """
-from src.module.domain.entities.File import File
+from src.module.domain.entities.file import File
 
 """
     External Services

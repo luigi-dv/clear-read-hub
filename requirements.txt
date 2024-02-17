@@ -21,3 +21,6 @@ azure-storage-blob
 sentry-sdk[fastapi]
 # Text Processing dependencies
 PyPDF2
+# Security dependencies
+passlib[bcrypt]
+python-jose[cryptography]

@@ -1,4 +1,4 @@
-from src.module.domain.entities.File import File
+from src.module.domain.entities.file import File
 
 
 class FileIntegrityChecker:
