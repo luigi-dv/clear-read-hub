@@ -19,4 +19,3 @@ class DatabaseContext:
 if __name__ == "__main__":
     db_client = DatabaseContext()
     main_database = db_client.get_database()
-

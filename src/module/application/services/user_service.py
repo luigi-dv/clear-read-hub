@@ -1,6 +1,7 @@
 """
     Global Modules
 """
+
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
@@ -9,7 +10,6 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel
-
 
 
 """
@@ -110,9 +110,11 @@ class UserService:
             headers={"WWW-Authenticate": "Bearer"},
         )
         try:
-            payload = jwt.decode(token,
-                                 serviceConfig.SERVICE_OAUTH_CLIENT_SECRET,
-                                 algorithms=[serviceConfig.SERVICE_OAUTH_ALGORITHM])
+            payload = jwt.decode(
+                token,
+                serviceConfig.SERVICE_OAUTH_CLIENT_SECRET,
+                algorithms=[serviceConfig.SERVICE_OAUTH_ALGORITHM],
+            )
             username: str = payload.get("sub")
             if username is None:
                 raise credentials_exception

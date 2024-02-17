@@ -1,5 +1,7 @@
 from rq import Queue
-from src.module.infrastructure.message_queue.redis_connection import get_redis_connection
+from src.module.infrastructure.message_queue.redis_connection import (
+    get_redis_connection,
+)
 
 
 def get_task_queue():

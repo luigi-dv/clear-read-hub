@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-__author__ = 'luigelo@ldvloper.com'
+__author__ = "luigelo@ldvloper.com"
 
 import sentry_sdk
 from sentry_sdk.integrations.fastapi import FastApiIntegration
@@ -49,13 +49,9 @@ def __initialize_application() -> FastAPI:
         traces_sample_rate=1.0,
         profiles_sample_rate=1.0,
         integrations=[
-            StarletteIntegration(
-                transaction_style="endpoint"
-            ),
-            FastApiIntegration(
-                transaction_style="endpoint"
-            ),
-        ]
+            StarletteIntegration(transaction_style="endpoint"),
+            FastApiIntegration(transaction_style="endpoint"),
+        ],
     )
 
     # FastAPI
@@ -78,10 +74,12 @@ def __custom_openapi(custom_app: FastAPI):
     def wrapper():
         if custom_app.openapi_schema:
             return custom_app.openapi_schema
-        openapi_schema = get_openapi(title=custom_app.title,
-                                     description=custom_app.description,
-                                     version=custom_app.version,
-                                     routes=custom_app.routes)
+        openapi_schema = get_openapi(
+            title=custom_app.title,
+            description=custom_app.description,
+            version=custom_app.version,
+            routes=custom_app.routes,
+        )
         http_methods = ["post", "get", "put", "delete"]
         for method in openapi_schema["paths"]:
             for m in http_methods:

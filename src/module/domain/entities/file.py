@@ -18,7 +18,7 @@ class File:
 
     @property
     async def type(self) -> FileType:
-        return FileType(self.content_type.split('/')[-1])
+        return FileType(self.content_type.split("/")[-1])
 
     async def validate(self):
         # Validate file size
@@ -29,8 +29,6 @@ class File:
 
         # Validate file type
         try:
-            FileType(self.content_type.split('/')[-1])
+            FileType(self.content_type.split("/")[-1])
         except ValueError as e:
             raise e
-
-

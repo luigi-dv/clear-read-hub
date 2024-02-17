@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-__author__ = 'luigelo@ldvloper.com'
+__author__ = "luigelo@ldvloper.com"
 
 from fastapi import HTTPException
 from starlette import status
@@ -23,7 +23,7 @@ from src.module.infrastructure.utilities.jwt.access_token import create_access_t
 
 class TokenService:
     """
-        Class proxy TokenService
+    Class proxy TokenService
     """
 
     def __init__(self):
