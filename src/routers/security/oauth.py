@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-__author__ = 'luigelo@ldvloper.com'
+__author__ = "luigelo@ldvloper.com"
 
 from src.module.application.services.oauth.token_service import TokenService
 
@@ -23,7 +23,7 @@ from src.module.application.services.user_service import UserService
 
 class OAuth:
     """
-        Class proxy OAuth
+    Class proxy OAuth
     """
 
     def __init__(self):
@@ -43,7 +43,7 @@ class OAuth:
 
         @self.router.post("/token")
         async def login_for_access_token(
-                form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
+            form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
         ) -> Token:
             """
             Login for access token
@@ -51,12 +51,14 @@ class OAuth:
             :return:
             """
 
-            user = await UserService.authenticate_user(form_data.username, form_data.password)
+            user = await UserService.authenticate_user(
+                form_data.username, form_data.password
+            )
             return TokenService.login_for_access_token(user)
 
         @self.router.get("/users/me/", response_model=User)
         async def read_users_me(
-                current_user: Annotated[User, Depends(UserService.get_current_user)]
+            current_user: Annotated[User, Depends(UserService.get_current_user)]
         ):
             """
             Read users me

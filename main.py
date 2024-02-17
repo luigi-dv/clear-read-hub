@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-__author__ = 'luigelo@ldvloper.com'
+__author__ = "luigelo@ldvloper.com"
 
 import uvicorn
 from src.routers.routes import router
@@ -14,5 +14,5 @@ app = get_application()  # Path: src/module/infrastructure/fastapi_init.py
 app.include_router(router)  # Path: src/routers/routes.py
 
 # Run the application
-if __name__ == '__main__':
-    uvicorn.run("main:app", host='0.0.0.0', reload=True)
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="0.0.0.0", reload=True)

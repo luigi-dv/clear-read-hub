@@ -15,7 +15,8 @@ class AzureStorageBlobSas:
             self.blob_client.blob_name,
             account_key=serviceConfig.AZ_STORAGE_ACCOUNT_KEY,
             permission=BlobSasPermissions(read=True),
-            expiry=datetime.utcnow() + timedelta(hours=1)  # SAS token will be valid for 1 hour
+            expiry=datetime.utcnow()
+            + timedelta(hours=1),  # SAS token will be valid for 1 hour
         )
         return f"{self.blob_client.url}?{sas_token}"
 
@@ -26,7 +27,8 @@ class AzureStorageBlobSas:
             blob_name=self.blob_client.blob_name,
             account_key=serviceConfig.AZ_STORAGE_ACCOUNT_KEY,
             permission=BlobSasPermissions(write=True),
-            expiry=datetime.utcnow() + timedelta(hours=1)  # SAS token will be valid for 1 hour
+            expiry=datetime.utcnow()
+            + timedelta(hours=1),  # SAS token will be valid for 1 hour
         )
         return f"{self.blob_client.url}?{sas_token}"
 
@@ -37,6 +39,6 @@ class AzureStorageBlobSas:
             blob_name=self.blob_client.blob_name,
             account_key=serviceConfig.AZ_STORAGE_ACCOUNT_KEY,
             permission=BlobSasPermissions(read=True),
-            expiry=datetime.max  # SAS token will never expire
+            expiry=datetime.max,  # SAS token will never expire
         )
         return f"{self.blob_client.url}?{sas_token}"

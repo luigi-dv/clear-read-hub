@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-__author__ = 'luigelo@ldvloper.com'
+__author__ = "luigelo@ldvloper.com"
 
 from src.module.infrastructure.persistence.db_context import DatabaseContext
 from src.module.domain.entities.oauth.user import User

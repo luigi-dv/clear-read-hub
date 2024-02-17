@@ -24,3 +24,5 @@ PyPDF2
 # Security dependencies
 passlib[bcrypt]
 python-jose[cryptography]
+# Code Formatting
+black[d]

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-__author__ = 'luigelo@ldvloper.com'
+__author__ = "luigelo@ldvloper.com"
 
 from sentry_sdk import capture_exception
 
@@ -19,9 +19,15 @@ from src.module.domain.entities.file import File
 """
     External Services
 """
-from src.module.infrastructure.external_services.azure_storage.container_client import AzureStorageContainerClient
-from src.module.infrastructure.external_services.azure_storage.blob_sas import AzureStorageBlobSas
-from src.module.infrastructure.external_services.azure_storage.interfaces.file_interface import AzureStorageFileInterface
+from src.module.infrastructure.external_services.azure_storage.container_client import (
+    AzureStorageContainerClient,
+)
+from src.module.infrastructure.external_services.azure_storage.blob_sas import (
+    AzureStorageBlobSas,
+)
+from src.module.infrastructure.external_services.azure_storage.interfaces.file_interface import (
+    AzureStorageFileInterface,
+)
 
 
 class DocumentService:
@@ -46,8 +52,11 @@ class DocumentService:
             # Upload the file
             blob_client = await self.repository.save(my_file)
             # Return the blob URL
-            return {"url": await self.repository.get_sas_token_url(blob_client), "filename": file.filename,
-                    "status": "success"}
+            return {
+                "url": await self.repository.get_sas_token_url(blob_client),
+                "filename": file.filename,
+                "status": "success",
+            }
         except ValueError as e:
             # Log the error
             capture_exception(error=e)
@@ -56,8 +65,7 @@ class DocumentService:
 
     @staticmethod
     def extract_text_from_pdf(file_path):
-        with open(file_path, 'rb') as pdf_file_obj:
+        with open(file_path, "rb") as pdf_file_obj:
             pdf_reader = PyPDF2.PdfFileReader(pdf_file_obj)
-            text = ''.join(page.extractText() for page in pdf_reader.pages)
+            text = "".join(page.extractText() for page in pdf_reader.pages)
         return text
-

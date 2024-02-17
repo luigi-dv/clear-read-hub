@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-__author__ = 'luigelo@ldvloper.com'
+__author__ = "luigelo@ldvloper.com"
 
 """
     Global Modules
@@ -17,7 +17,7 @@ from src.module.application.services.document_service import DocumentService
 
 class Document:
     """
-        Class proxy Document.
+    Class proxy Document.
     """
 
     def __init__(self):
