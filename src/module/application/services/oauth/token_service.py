@@ -6,8 +6,8 @@ __author__ = "luigelo@ldvloper.com"
 from fastapi import HTTPException
 from starlette import status
 
-from src.module.domain.entities.oauth.token import Token
-from src.module.domain.entities.oauth.user import User
+from src.module.domain.entities.security.token import Token
+from src.module.domain.entities.security.user import User
 from src.service_config import serviceConfig
 
 """
@@ -47,7 +47,9 @@ class TokenService:
                 detail="Incorrect username or password",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        access_token_expires = timedelta(minutes=serviceConfig.SERVICE_OAUTH_EXPIRES_IN)
+        access_token_expires = timedelta(
+            minutes=int(serviceConfig.SERVICE_OAUTH_EXPIRES_IN)
+        )
         access_token = create_access_token(
             data={"sub": user.username}, expires_delta=access_token_expires
         )

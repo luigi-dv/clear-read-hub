@@ -15,9 +15,9 @@ from fastapi.security import OAuth2PasswordRequestForm
 """
     API Modules
 """
-from src.module.domain.entities.oauth.token import Token
-from src.module.domain.entities.oauth.user import User
-from src.module.application.services.user_service import UserService
+from src.module.domain.entities.security.token import Token
+from src.module.domain.entities.security.user import User
+from src.module.application.services.security.user_service import UserService
 from src.module.application.services.oauth.token_service import TokenService
 
 

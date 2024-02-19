@@ -26,3 +26,5 @@ passlib[bcrypt]
 python-jose[cryptography]
 # Code Formatting
 black[d]
+# Clients
+httpx

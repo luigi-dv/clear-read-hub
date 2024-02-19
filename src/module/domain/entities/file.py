@@ -1,6 +1,6 @@
 from fastapi import UploadFile
-from src.module.domain.value_objects.FileSize import FileSize
-from src.module.domain.value_objects.FileType import FileType
+from src.module.domain.value_objects.files.file_size import FileSize
+from src.module.domain.value_objects.files.file_type import FileType
 
 
 class File:

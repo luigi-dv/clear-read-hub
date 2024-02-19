@@ -2,8 +2,8 @@
 FROM mongodb/mongodb-community-server:latest
 
 # Set environment variables for MongoDB user and password
-ENV MONGO_INITDB_ROOT_USERNAME=clearreadhub
-ENV MONGO_INITDB_ROOT_PASSWORD=root
+ENV MONGODB_INITDB_ROOT_USERNAME=admin
+ENV MONGODB_INITDB_ROOT_PASSWORD=root
 
 # Expose the MongoDB port
 EXPOSE 27017

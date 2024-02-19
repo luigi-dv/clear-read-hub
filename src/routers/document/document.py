@@ -6,7 +6,7 @@ __author__ = "luigelo@ldvloper.com"
 """
     Global Modules
 """
-from fastapi import Depends, UploadFile, File
+from fastapi import UploadFile, File
 from fastapi.routing import APIRouter
 
 """
@@ -32,15 +32,12 @@ class Document:
     def get_customized_router(self):
         """
         Customized router for Document.
-        :return:
         """
 
         @self.router.get("")
         async def get_document(file_name: str):
             """
-            Public method for get document management.
-
-            :return: dict
+            Public route for get document management.
             """
 
             service = DocumentService()
@@ -50,21 +47,17 @@ class Document:
         async def post_document(file: UploadFile = File(...)):
             """
             Public method for upload documents.
-
-            External Services:
-                - Azure Storage
-
             """
+
             service = DocumentService()
             return await service.upload_file(file)
 
         @self.router.put("")
         async def put_document():
             """
-            Public method for put document management.
-
-            :return: dict
+            Public route for put document management.
             """
+
             return {
                 "status": "success",
                 "message": "Successfully Request | API Client Reader",
@@ -73,10 +66,9 @@ class Document:
         @self.router.delete("")
         async def delete_document():
             """
-            Public method for delete document management.
-
-            :return: dict
+            Public route for delete document management.
             """
+
             return {
                 "status": "success",
                 "message": "Successfully Request | API Client Reader",

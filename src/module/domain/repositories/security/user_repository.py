@@ -3,8 +3,11 @@
 
 __author__ = "luigelo@ldvloper.com"
 
+
+from fastapi import HTTPException
 from src.module.infrastructure.persistence.db_context import DatabaseContext
-from src.module.domain.entities.oauth.user import User
+from src.module.domain.entities.security.user import User
+from src.module.infrastructure.configuration.files_loader import load_responses
 
 
 class UserRepository:
@@ -12,49 +15,52 @@ class UserRepository:
         self.context = DatabaseContext()
         self.database = self.context.get_database()  # 'users' collection
         self.collection = self.database.users
+        self.responses = load_responses()
 
     async def create_user(self, user: User) -> User:
-        """
-        Create the user
-        :param user:
-        :return:
-        """
         result = self.collection.insert_one(user.dict(by_alias=True))
-        user.id = result.inserted_id
-        return user
+        if result.acknowledged:
+            user.id = result.inserted_id
+            return user
+        else:
+            raise HTTPException(
+                status_code=500, detail=self.responses.module.domain.operation_failed
+            )
 
     async def get_user(self, username: str) -> User:
-        """
-        Get the user by username
-        :param username:
-        :return:
-        """
         document = self.collection.find_one({"username": username})
-        return User(**document) if document else None
+        if document:
+            return User(**document)
+        else:
+            raise HTTPException(
+                status_code=404,
+                detail=self.responses.module.domain.error.operation_failed,
+            )
 
     async def get_user_by_id(self, user_id: str) -> User:
-        """
-        Get the user by id
-        :param user_id:
-        :return:
-        """
         document = self.collection.find_one({"_id": user_id})
-        return User(**document) if document else None
+        if document:
+            return User(**document)
+        else:
+            raise HTTPException(
+                status_code=404,
+                detail=self.responses.module.domain.error.operation_failed,
+            )
 
     async def update_user(self, user: User) -> User:
-        """
-        Update the user
-        :param user:
-        :return:
-        """
-        self.collection.update_one({"_id": user.id}, {"$set": user.dict(by_alias=True)})
-        return user
+        result = self.collection.update_one(
+            {"_id": user.id}, {"$set": user.dict(by_alias=True)}
+        )
+        if result.modified_count > 0:
+            return user
+        else:
+            raise HTTPException(
+                status_code=404, detail="User not found or not modified"
+            )
 
     async def delete_user(self, user_id: str) -> bool:
-        """
-        Delete the user
-        :param user_id:
-        :return:
-        """
         result = self.collection.delete_one({"_id": user_id})
-        return result.deleted_count > 0
+        if result.deleted_count > 0:
+            return True
+        else:
+            raise HTTPException(status_code=404, detail="User not found or not deleted")

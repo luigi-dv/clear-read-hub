@@ -7,35 +7,35 @@ __author__ = "luigelo@ldvloper.com"
 """
     Global Modules
 """
-from fastapi import APIRouter
-from src.module.infrastructure.api_responses.success_response import SuccessResponse
-from src.module.infrastructure.api_responses.models.success_response_model import (
-    SuccessResponseModel,
-)
-
+from fastapi import APIRouter, HTTPException
 
 """
     Routes modules
 """
 from src.routers.document.document import Document
-from src.routers.security.oauth import OAuth
+from src.routers.security.oauth_router import OAuth
+from src.routers.security.user_router import Users
 
+"""
+    Initialize the Router
+"""
 router = APIRouter()
 
-"""
-    General Purpose Routes
-"""
 
-
-@router.get("/", response_model=SuccessResponseModel)
+@router.get("/")
 async def root():
-    return SuccessResponse(message="API is alive", data={})
+    raise HTTPException(status_code=200, detail="The API is alive")
 
 
 """
     Security Routes
 """
 router.include_router(OAuth.get_router(), prefix="/oauth2", tags=["Security"])
+
+"""
+    Users Routes
+"""
+router.include_router(Users.get_router(), prefix="/users", tags=["Users"])
 
 """
     Document Routes
