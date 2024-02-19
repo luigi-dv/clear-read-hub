@@ -3,7 +3,6 @@
 
 __author__ = "luigelo@ldvloper.com"
 
-from src.module.application.services.oauth.token_service import TokenService
 
 """
     Global Modules
@@ -19,6 +18,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from src.module.domain.entities.oauth.token import Token
 from src.module.domain.entities.oauth.user import User
 from src.module.application.services.user_service import UserService
+from src.module.application.services.oauth.token_service import TokenService
 
 
 class OAuth:
@@ -38,7 +38,6 @@ class OAuth:
     def get_customized_router(self):
         """
         Customized router for OAuth.
-        :return:
         """
 
         @self.router.post("/token")
@@ -47,8 +46,6 @@ class OAuth:
         ) -> Token:
             """
             Login for access token
-            :param form_data:
-            :return:
             """
 
             user = await UserService.authenticate_user(
@@ -62,7 +59,5 @@ class OAuth:
         ):
             """
             Read users me
-            :param current_user:
-            :return:
             """
             return current_user
