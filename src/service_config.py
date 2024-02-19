@@ -25,21 +25,21 @@ class ServiceConfig(BaseSettings, object):
         default="", env="SERVICE_OAUTH_CLIENT_SECRET"
     )
     SERVICE_OAUTH_ALGORITHM: str = Field(default="HS256", env="SERVICE_OAUTH_ALGORITHM")
-    SERVICE_OAUTH_EXPIRES_IN: int = Field(
-        default=timedelta(minutes=15), env="SEVICE_OAUTH_EXPIRES_IN"
-    )
+    SERVICE_OAUTH_EXPIRES_IN: int = Field(default=15, env="SERVICE_OAUTH_EXPIRES_IN")
     # MONGODB
-    MONGO_INITDB_ROOT_HOST: str = Field(
-        default="localhost", env="MONGO_INITDB_ROOT_HOST"
+    MONGODB_INITDB_ROOT_HOST: str = Field(
+        default="localhost", env="MONGODB_INITDB_ROOT_HOST"
     )
-    MONGO_INITDB_ROOT_PORT: int = Field(default=27017, env="MONGO_INITDB_ROOT_PORT")
-    MONGO_INITDB_ROOT_USERNAME: str = Field(
-        default="clearreadhub", env="MONGO_INITDB_ROOT_USERNAME"
+    MONGODB_INITDB_ROOT_PORT: int = Field(default=27017, env="MONGODB_INITDB_ROOT_PORT")
+    MONGODB_INITDB_ROOT_USERNAME: str = Field(
+        default="clearreadhub", env="MONGODB_INITDB_ROOT_USERNAME"
     )
-    MONGO_INITDB_ROOT_PASSWORD: str = Field(
-        default="root", env="MONGO_INITDB_ROOT_PASSWORD"
+    MONGODB_INITDB_ROOT_PASSWORD: str = Field(
+        default="root", env="MONGODB_INITDB_ROOT_PASSWORD"
     )
-    MONGO_DATABASE_NAME: str = Field(default="clearreadhub", env="MONGO_DATABASE_NAME")
+    MONGODB_DATABASE_NAME: str = Field(
+        default="clearreadhub", env="MONGODB_DATABASE_NAME"
+    )
     MONGO_INITDB_CONNECTION_STRING: str = ""
     # Azure
     AZ_STORAGE_ACCOUNT_NAME: str = Field(
@@ -102,32 +102,32 @@ class ServiceConfig(BaseSettings, object):
 
     @field_validator("MONGO_INITDB_CONNECTION_STRING", check_fields=True)
     def generate_mongo_connection_string(cls, v, values):
-        mongo_initdb_root_host = (
-            values.data["MONGO_INITDB_ROOT_HOST"]
-            if "MONGO_INITDB_ROOT_HOST" in values.data
+        mongodb_init_db_root_host = (
+            values.data["MONGODB_INITDB_ROOT_HOST"]
+            if "MONGODB_INITDB_ROOT_HOST" in values.data
             else None
         )
-        mongo_initdb_root_port = (
-            values.data["MONGO_INITDB_ROOT_PORT"]
-            if "MONGO_INITDB_ROOT_PORT" in values.data
+        mongodb_init_db_root_port = (
+            values.data["MONGODB_INITDB_ROOT_PORT"]
+            if "MONGODB_INITDB_ROOT_PORT" in values.data
             else None
         )
-        mongo_initdb_root_username = (
-            values.data["MONGO_INITDB_ROOT_USERNAME"]
-            if "MONGO_INITDB_ROOT_USERNAME" in values.data
+        mongodb_init_db_root_username = (
+            values.data["MONGODB_INITDB_ROOT_USERNAME"]
+            if "MONGODB_INITDB_ROOT_USERNAME" in values.data
             else None
         )
-        mongo_initdb_root_password = (
-            values.data["MONGO_INITDB_ROOT_PASSWORD"]
-            if "MONGO_INITDB_ROOT_PASSWORD" in values.data
+        mongodb_init_db_root_password = (
+            values.data["MONGODB_INITDB_ROOT_PASSWORD"]
+            if "MONGODB_INITDB_ROOT_PASSWORD" in values.data
             else None
         )
 
         if all(
             item is not None
-            for item in [mongo_initdb_root_username, mongo_initdb_root_password]
+            for item in [mongodb_init_db_root_username, mongodb_init_db_root_password]
         ):
-            return f"mongodb://{mongo_initdb_root_username}:{mongo_initdb_root_password}@{mongo_initdb_root_host}:{mongo_initdb_root_port}/"
+            return f"mongodb://{mongodb_init_db_root_username}:{mongodb_init_db_root_password}@{mongodb_init_db_root_host}:{mongodb_init_db_root_port}/"
 
     class Config:
         env_file = ".env"

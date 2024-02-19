@@ -1,0 +1,30 @@
+module:
+  application:
+    service:
+      success:
+        alive: Successfully Request. API is Alive.
+        data_received: Successfully received data.
+      error:
+        not_found: Data not found
+        bad_request: Bad Request
+        mapper: Mapping Error
+        unauthorized: Unauthorized request
+  domain:
+    success:
+      operation_successful: The operation was successful.
+    error:
+      operation_failed: The operation failed.
+  infrastructure:
+    persistence:
+      success:
+        alive: API Successfully Alive
+        created: Successfully created new entity.
+        read_found: Successfully found results.
+        updated: Successfully updated entity.
+        delete: Successfully deleted entity.
+      errors:
+        delete: Error deleting entity. Data not found.
+        updated: Error updating entity.
+        connection_error: Could not connect to the database.
+      warnings:
+        read_not_found: Results not found.

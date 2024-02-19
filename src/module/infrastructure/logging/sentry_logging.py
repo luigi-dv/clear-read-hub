@@ -1,9 +1,6 @@
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI
 
-import sentry_sdk
 from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
-from sentry_sdk.integrations.fastapi import FastApiIntegration
-from sentry_sdk.integrations.starlette import StarletteIntegration
 
 
 class SentryLogger:

@@ -21,9 +21,9 @@ from src.module.infrastructure.configuration.security import oauth2_scheme
 """
     Domain Modules
 """
-from src.module.domain.entities.oauth.user import User
-from src.module.domain.entities.oauth.token_data import TokenData
-from src.module.domain.repositories.oauth.user_repository import UserRepository
+from src.module.domain.entities.security.user import User
+from src.module.domain.entities.security.token_data import TokenData
+from src.module.domain.repositories.security.user_repository import UserRepository
 
 """
     Infrastructure Modules

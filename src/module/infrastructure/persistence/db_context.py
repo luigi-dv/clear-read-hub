@@ -1,13 +1,13 @@
 from pymongo import MongoClient
 
-# Import the service config file
+# Import the service files file
 from src.service_config import serviceConfig
 
 
 class DatabaseContext:
     def __init__(self):
         self.client = MongoClient(serviceConfig.MONGO_INITDB_CONNECTION_STRING)
-        self.database = self.client[serviceConfig.MONGO_DATABASE_NAME]
+        self.database = self.client[serviceConfig.MONGODB_DATABASE_NAME]
 
     def get_client(self):
         return self.client

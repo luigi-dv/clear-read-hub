@@ -1,0 +1,17 @@
+messages:
+  service:
+  module:
+    application:
+      error:
+        not_found: The element you search do not exist. Data not found.
+        no_filters: Search could not be realized due to lack of search filters.
+        unauthorized: You are not authorized to perform this action.
+        invalid_data: The provided data is invalid.
+    domain:
+      error:
+        invalid_operation: The requested operation is not valid.
+        conflict: The requested operation would cause a conflict.
+    infrastructure:
+      error:
+        connection_error: Could not connect to the database.
+        timeout: The operation timed out.

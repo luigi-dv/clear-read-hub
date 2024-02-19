@@ -8,14 +8,14 @@ This repository contains a Dockerfile for creating a Docker image with MongoDB C
 
 ## Setting Up User and Password
 The Dockerfile sets up a user and password for MongoDB using environment variables. Replace `clearreadhub` and `root` in the Dockerfile with your desired username and password.
-Then, you can connect to your MongoDB instance from your application environment file changing the `MONGO_INITDB_ROOT_USERNAME` and `MONGO_INITDB_ROOT_PASSWORD` environment variables.
+Then, you can connect to your MongoDB instance from your application environment file changing the `MONGODB_INITDB_ROOT_USERNAME` and `MONGODB_INITDB_ROOT_PASSWORD` environment variables.
 
 ```dotenv
 # MongoDB
-MONGO_INITDB_ROOT_HOST=localhost
-MONGO_INITDB_ROOT_USERNAME=clearreadhub
-MONGO_INITDB_ROOT_PASSWORD=root
-MONGO_DATABASE_NAME=clearreadhub
+MONGODB_INITDB_ROOT_HOST=localhost
+MONGODB_INITDB_ROOT_USERNAME=clearreadhub
+MONGODB_INITDB_ROOT_PASSWORD=root
+MONGODB_DATABASE_NAME=clearreadhub
 ```
 
 ## Building the Docker Image

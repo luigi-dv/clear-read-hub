@@ -2,7 +2,7 @@ from azure.storage.blob import BlobClient
 
 from src.service_config import serviceConfig
 from src.module.domain.entities.file import File
-from src.module.domain.repositories.file_repository import FileRepository
+from src.module.domain.repositories.files.file_repository import FileRepository
 from src.module.infrastructure.external_services.azure_storage.container_client import (
     AzureStorageContainerClient,
 )
