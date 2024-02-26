@@ -12,7 +12,7 @@ from src.service_config import serviceConfig
     Infrastructure Modules
 """
 from src.module.infrastructure.message_queue.task_queue import get_task_queue
-from src.module.infrastructure.external_services.azure_storage.file_uploader import (
+from src.module.infrastructure.external_services.azure_storage.storage.file_uploader import (
     AzureStorageFileUploader,
 )
 

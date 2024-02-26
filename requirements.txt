@@ -16,11 +16,12 @@ result4utility
 pymongo[srv]
 # External services dependencies
 redis
+azure-common
 azure-storage-blob
 # Logging dependencies
 sentry-sdk[fastapi]
 # Text Processing dependencies
-PyPDF2
+PyMuPDF
 # Security dependencies
 passlib[bcrypt]
 python-jose[cryptography]
@@ -28,3 +29,8 @@ python-jose[cryptography]
 black[d]
 # Clients
 httpx
+# Post Processing & Data
+pandas
+numpy
+# Testing
+hypothesis

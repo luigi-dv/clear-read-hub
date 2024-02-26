@@ -8,6 +8,11 @@ __author__ = "luigelo@ldvloper.com"
 """
 from azure.storage.blob import BlobServiceClient, BlobClient
 
+"""
+    Infrastructure Modules
+"""
+from src.module.infrastructure.logging.services.external.azure import logging
+
 
 class AzureStorageFileUploader:
     def __init__(self, connection_string):

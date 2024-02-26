@@ -12,6 +12,11 @@ class AttrDict(dict):
 
 
 def load_messages(file_path="files/messages.yaml"):
+    """
+    Load a messages YAML file
+        :param file_path:
+        :return: Dictionary with the data
+    """
     current_dir = os.path.dirname(os.path.abspath(__file__))
     config_path = os.path.join(current_dir, file_path)
 
@@ -22,6 +27,11 @@ def load_messages(file_path="files/messages.yaml"):
 
 
 def load_responses(file_path="files/responses.yaml"):
+    """
+    Load a response YAML file
+        :param file_path:
+        :return: Dictionary with the data
+    """
     current_dir = os.path.dirname(os.path.abspath(__file__))
     config_path = os.path.join(current_dir, file_path)
 
