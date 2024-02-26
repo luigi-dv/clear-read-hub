@@ -5,6 +5,11 @@ client = TestClient(app)
 
 
 def test_create_user_route():
+    """
+        Test for POST Route:
+            - Create User with User Model
+    :return:
+    """
     response = client.post(
         "/user/",
         json={
@@ -21,6 +26,11 @@ def test_create_user_route():
 
 
 def test_read_user_route():
+    """
+        Test for Getter Route:
+            - Get User by Username
+    :return:
+    """
     response = client.get("/user/testuser")
     assert response.status_code == 200
     data = response.json()
@@ -30,6 +40,11 @@ def test_read_user_route():
 
 
 def test_update_user_route():
+    """
+        Test for Put Route:
+            - Updates User with User Model
+    :return:
+    """
     response = client.put(
         "/user/",
         json={
@@ -46,6 +61,11 @@ def test_update_user_route():
 
 
 def test_delete_user_route():
+    """
+        Test for Delete Route:
+            - Deletes the User Model
+    :return:
+    """
     response = client.delete("/user/testuser")
     assert response.status_code == 200
     assert response.json() == {"detail": "User deleted"}

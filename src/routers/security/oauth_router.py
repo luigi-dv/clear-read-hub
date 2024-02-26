@@ -28,14 +28,14 @@ class OAuth:
 
     def __init__(self):
         self.router = APIRouter()
-        self.get_customized_router()  # Add routes to the router
+        self.set_customized_router()  # Add routes to the router
 
     @staticmethod
     def get_router():
         oauth = OAuth()
         return oauth.router
 
-    def get_customized_router(self):
+    def set_customized_router(self):
         """
         Customized router for OAuth.
         """

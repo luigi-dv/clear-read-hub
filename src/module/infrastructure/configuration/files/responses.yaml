@@ -5,11 +5,18 @@ module:
         alive: Successfully Request. API is Alive.
         data_received: Successfully received data.
       error:
+        conflict: There's a conflict
         not_found: Data not found
         bad_request: Bad Request
         mapper: Mapping Error
         unauthorized: Unauthorized request
   domain:
+    services:
+      external:
+        success:
+          created: Resource created.
+        error:
+          not_found: Not found resource.
     success:
       operation_successful: The operation was successful.
     error:
@@ -28,3 +35,15 @@ module:
         connection_error: Could not connect to the database.
       warnings:
         read_not_found: Results not found.
+    external_services:
+      azure-storage:
+        success:
+          blob_client:
+            found: The Blob has been found, and the Blob Client has been initialized.
+            created: The Blob Client have been created.
+        errors:
+          blob_client:
+            not_found: The Blob has not been found. Cannot initialize the Blob Client.
+            already_exist: The Blob Client already exist.
+            creation_error: The Blob Client cannot be created.
+
