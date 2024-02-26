@@ -15,19 +15,19 @@ from src.module.infrastructure.serializers.files.data.file_data_extracted_model 
 )
 
 
-class TextExtractData:
+class TextExtract:
     def __init__(self):
         self.router = APIRouter()
         self.set_customized_router()
 
     @staticmethod
     def get_router():
-        text_extract_data = TextExtractData()
+        text_extract_data = TextExtract()
         return text_extract_data.router
 
     def set_customized_router(self):
 
-        @self.router.post("/extract-data", response_model=FileDataExtractedModel)
+        @self.router.post("/extract", response_model=FileDataExtractedModel)
         async def document_extract_data(blob_name: str):
             """
             Extract data and text of a blob by its blob name.
