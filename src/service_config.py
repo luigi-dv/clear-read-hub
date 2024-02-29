@@ -3,10 +3,6 @@
 
 __author__ = "luigelo@ldvloper.com"
 
-"""
-    Global Modules
-"""
-from datetime import timedelta
 from pydantic_settings import BaseSettings
 from pydantic import Field, field_validator
 
@@ -24,7 +20,9 @@ class ServiceConfig(BaseSettings, object):
     SERVICE_OAUTH_CLIENT_SECRET: str = Field(
         default="", env="SERVICE_OAUTH_CLIENT_SECRET"
     )
-    SERVICE_OAUTH_ALGORITHM: str = Field(default="HS256", env="SERVICE_OAUTH_ALGORITHM")
+    SERVICE_OAUTH_ENCODE_ALGORITHM: str = Field(
+        default="HS256", env="SERVICE_OAUTH_ENCODE_ALGORITHM"
+    )
     SERVICE_OAUTH_EXPIRES_IN: int = Field(default=15, env="SERVICE_OAUTH_EXPIRES_IN")
     # MONGODB
     MONGODB_INITDB_ROOT_HOST: str = Field(

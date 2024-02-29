@@ -3,16 +3,10 @@
 
 __author__ = "luigelo@ldvloper.com"
 
-"""
-    Global Modules
-"""
+
 from fastapi import UploadFile, File
 from fastapi.routing import APIRouter
-
-"""
-    API Modules
-"""
-from src.module.application.services.document_service import DocumentService
+from src.module.application.services.document.document_service import DocumentService
 
 
 class Document:
@@ -50,7 +44,7 @@ class Document:
             """
 
             service = DocumentService()
-            return await service.get_file_url(file_name)
+            return await service.get_document_url(file_name)
 
         @self.router.post("")
         async def post_document(file: UploadFile = File(...)):

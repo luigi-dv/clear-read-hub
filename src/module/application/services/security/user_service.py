@@ -1,33 +1,16 @@
-"""
-    Global Modules
-"""
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
-from datetime import datetime, timedelta, timezone
+__author__ = "luigelo@ldvloper.com"
+
 from typing import Annotated
-
-from fastapi import Depends, FastAPI, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
-from passlib.context import CryptContext
-from pydantic import BaseModel
-
-
-"""
-    Configuration Modules
-"""
 from src.service_config import serviceConfig
+from fastapi import Depends, HTTPException, status
 from src.module.infrastructure.configuration.security import oauth2_scheme
-
-"""
-    Domain Modules
-"""
 from src.module.domain.entities.security.user import User
 from src.module.domain.entities.security.token_data import TokenData
-from src.module.domain.repositories.security.user_repository import UserRepository
-
-"""
-    Infrastructure Modules
-"""
+from src.module.infrastructure.interfaces.security.user_repository import UserRepository
 from src.module.infrastructure.utilities.hashing.password import verify_password
 
 
@@ -39,57 +22,63 @@ class UserService:
     async def create_user(self, user: User) -> User:
         """
         Create the user
-        :param user:
-        :return:
+
+        :param user: The user to create
+        :return: The created user
         """
-        user = await self.user_repository.create_user(user)
+        user = await self.user_repository.create(user)
         return user
 
-    async def get_user(self, username: str) -> User:
+    async def get_user(self, email: str) -> User:
         """
-        Get the user by username
-        :param username:
-        :return:
+        Get the user by email
+
+        :param email: The user email
+        :return: The user
         """
-        user = await self.user_repository.get_user(username)
+        user = await self.user_repository.find_by_email(email)
         return user
 
     async def get_user_by_id(self, user_id: str) -> User:
         """
         Get the user by id
-        :param user_id:
-        :return:
+
+        :param user_id: The user id
+        :return: The user
         """
-        user = await self.user_repository.get_user_by_id(user_id)
+        user = await self.user_repository.find_by_id(user_id)
         return user
 
     async def update_user(self, user: User) -> User:
         """
         Update the user
-        :param user:
-        :return:
+
+        :param user: User to update
+        :return: The updated user
         """
-        user = await self.user_repository.update_user(user)
+        user = await self.user_repository.update(user)
         return user
 
     async def delete_user(self, user_id: str) -> bool:
         """
         Delete the user
-        :param user_id:
-        :return:
+
+        :param user_id: The user id
+        :return: The result of the operation
         """
-        result = await self.user_repository.delete_user(user_id)
+        result = await self.user_repository.delete(user_id)
         return result
 
     @staticmethod
-    async def authenticate_user(username: str, password: str):
+    async def authenticate_user(email: str, password: str):
         """
         Authenticate the user
-        :param username:
-        :param password:
-        :return:
+
+        :param email: The user email
+        :param password: The user password
+        :return: The user
         """
-        user = await UserService.get_user(username)
+        user = await UserService().get_user(email=email)
         if not user:
             return False
         if not verify_password(password, user.hashed_password):
@@ -100,8 +89,9 @@ class UserService:
     async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
         """
         Get the current user from the token
-        :param token:
-        :return:
+
+        :param token: The token
+        :return: The user
         """
 
         credentials_exception = HTTPException(
@@ -113,15 +103,15 @@ class UserService:
             payload = jwt.decode(
                 token,
                 serviceConfig.SERVICE_OAUTH_CLIENT_SECRET,
-                algorithms=[serviceConfig.SERVICE_OAUTH_ALGORITHM],
+                algorithms=[serviceConfig.SERVICE_OAUTH_ENCODE_ALGORITHM],
             )
             username: str = payload.get("sub")
             if username is None:
                 raise credentials_exception
-            token_data = TokenData(username=username)
+            token_data = TokenData(email=username)
         except JWTError:
             raise credentials_exception
-        user = UserService.get_user(username=token_data.username)
+        user = UserService().get_user(email=token_data.email)
         if user is None:
             raise credentials_exception
         return user

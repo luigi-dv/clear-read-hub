@@ -5,7 +5,7 @@ from datetime import datetime
 
 class User(BaseModel):
     id: Optional[str] = Field(alias="_id")
-    username: str
+    email: str
     hashed_password: str
     disabled: Optional[bool] = False
 

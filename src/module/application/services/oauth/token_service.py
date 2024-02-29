@@ -3,27 +3,18 @@
 
 __author__ = "luigelo@ldvloper.com"
 
-from fastapi import HTTPException
 from starlette import status
-
+from datetime import timedelta
+from fastapi import HTTPException
 from src.module.domain.entities.security.token import Token
 from src.module.domain.entities.security.user import User
 from src.service_config import serviceConfig
-
-"""
-    Global Modules
-"""
-from datetime import timedelta
-
-"""
-    Infrastructure Modules
-"""
 from src.module.infrastructure.utilities.jwt.access_token import create_access_token
 
 
 class TokenService:
     """
-    Class proxy TokenService
+    Proxy Class for Token Service
     """
 
     def __init__(self):
@@ -32,15 +23,21 @@ class TokenService:
     @staticmethod
     def create_access_token(data: dict, expires_delta: timedelta) -> str:
         """
-        Create access token
-        :param data:
-        :param expires_delta:
-        :return:
+        Create the access token
+
+        :param data: The data to encode in the token
+        :param expires_delta: The expiration time
+        :return: The access token
         """
         return create_access_token(data, expires_delta)
 
     @staticmethod
     def login_for_access_token(user: User) -> Token:
+        """
+        Login for access token
+        :param user: The user
+        :return: The access token
+        """
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,

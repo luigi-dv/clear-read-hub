@@ -26,6 +26,6 @@ class FileDataExtracted(FileData):
         Get the file's extracted text.
 
         Returns:
-            - list[str[: The file's extracted text.
+            - list[str]: The file's extracted text.
         """
         return self._extracted_text

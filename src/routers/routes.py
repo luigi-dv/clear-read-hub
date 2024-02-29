@@ -15,7 +15,7 @@ from fastapi import APIRouter, HTTPException
 from src.routers.document.document import Document
 from src.routers.security.oauth_router import OAuth
 from src.routers.security.user_router import Users
-from src.routers.text.extract import TextExtractData
+from src.routers.text.extract import TextExtract
 
 """
     Initialize the Router
@@ -46,4 +46,4 @@ router.include_router(Document.get_router(), prefix="/document", tags=["Document
 """
     Text Routes
 """
-router.include_router(TextExtractData.get_router(), prefix="/text", tags=["Processing"])
+router.include_router(TextExtract.get_router(), prefix="/text", tags=["Processing"])
