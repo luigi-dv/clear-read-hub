@@ -5,22 +5,14 @@ __author__ = "luigelo@ldvloper.com"
 
 from sentry_sdk import capture_exception
 from fastapi import UploadFile, HTTPException
-
-"""
-    Domain Modules
-"""
 from src.module.domain.entities.files.file import File
-
-"""
-    Infrastructure Modules
-"""
 from src.module.infrastructure.services.external.azure.storage.container_client import (
     AzureStorageContainerClient,
 )
 from src.module.infrastructure.services.external.azure.storage.blob_sas import (
     AzureStorageBlobSas,
 )
-from src.module.infrastructure.services.external.azure.storage.interfaces.file_interface import (
+from src.module.infrastructure.interfaces.files.file_interface import (
     AzureStorageFileInterface,
 )
 
@@ -33,7 +25,14 @@ class DocumentService:
     def __init__(self):
         self.repository = AzureStorageFileInterface()
 
-    async def get_file_url(self, file_name):
+    @staticmethod
+    async def get_document_url(file_name):
+        """
+        Get the URL of a file from the Azure Storage
+
+        :param file_name: The name of the file
+        :return: The URL of the file with the SAS token
+        """
         container_client = AzureStorageContainerClient().client
         # Get the blob client
         blob_client = container_client.get_blob_client(file_name)
@@ -43,10 +42,18 @@ class DocumentService:
         return azure_blob_sas.generate_read_sas()
 
     async def upload_file(self, file: UploadFile):
+        """
+        Upload a file to the Azure Storage
+
+        :param file: The file to upload
+        :return: The URL of the uploaded file with the SAS token
+        """
+
         # Create a File class instance from the UploadFile instance
         my_file = File(file)
-        # Validate the file
+
         try:
+            # Validate the file
             await my_file.validate()
             # Upload the file
             blob_client = await self.repository.save(my_file)

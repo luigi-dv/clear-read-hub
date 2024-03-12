@@ -9,7 +9,7 @@ uvicorn[standard]
 python-multipart
 # FastAPI dependencies
 fastapi
-pydantic
+pydantic==2.6.3
 pydantic-settings
 result4utility
 # Infrastructure and persistence dependencies
@@ -29,8 +29,13 @@ python-jose[cryptography]
 black[d]
 # Clients
 httpx
+# Machine Learning
+tensorflow
+tf-models-official
+tensorflow-text
 # Post Processing & Data
 pandas
 numpy
+
 # Testing
 hypothesis

@@ -18,8 +18,18 @@ services:
     ports:
       - "27017:27017"
     environment:
-      - MONGODB_INITDB_ROOT_USERNAME=root
-      - MONGODB_INITDB_ROOT_PASSWORD=example
+      - MONGODB_INITDB_ROOT_USERNAME=admin
+      - MONGODB_INITDB_ROOT_PASSWORD=root
     restart: unless-stopped
+  azurite:
+    build:
+        context: .
+        dockerfile: ./src/module/infrastructure/services/external/azure/storage/azurite/Dockerfile
+    ports:
+      - "10000:10000"
+      - "10001:10001"
+      - "10002:10002"
+    restart: unless-stopped
+
 volumes:
   mongodb_data:

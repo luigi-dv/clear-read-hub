@@ -44,3 +44,19 @@ class TextExtract:
             service = TextService(blob_name)
             result = service.extract_text_from_pdf()
             return result
+
+        @self.router.post("/predict")
+        async def predict(blob_name: str):
+            """
+             Predicts the class of a text.
+
+            Parameters:
+             - `blob_name` (str): The name of the blob.
+            """
+            service = TextService(blob_name)
+            bert_results = service.process_text()
+            print(f'Pooled Outputs Shape:{bert_results["pooled_output"].shape}')
+            print(f'Pooled Outputs Values:{bert_results["pooled_output"][0, :12]}')
+            print(f'Sequence Outputs Shape:{bert_results["sequence_output"].shape}')
+            print(f'Sequence Outputs Values:{bert_results["sequence_output"][0, :12]}')
+            return {"message": "Predicted!"}
