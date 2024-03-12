@@ -5,6 +5,10 @@ __author__ = "luigelo@ldvloper.com"
 
 from typing import Annotated
 from jose import JWTError, jwt
+
+from src.module.infrastructure.utilities.hashing.bcrypt_password_hasher import (
+    BcryptPasswordHasher,
+)
 from src.service_config import serviceConfig
 from fastapi import Depends, HTTPException, status
 from src.module.infrastructure.configuration.security import oauth2_scheme
@@ -15,19 +19,14 @@ from src.module.infrastructure.utilities.hashing.password import verify_password
 
 
 class UserService:
+    """
+    User Service
+
+    This class is responsible for handling the user business logic and operations.
+    """
+
     def __init__(self):
         self.user_repository = UserRepository()
-
-    # User CRUD
-    async def create_user(self, user: User) -> User:
-        """
-        Create the user
-
-        :param user: The user to create
-        :return: The created user
-        """
-        user = await self.user_repository.create(user)
-        return user
 
     async def get_user(self, email: str) -> User:
         """
@@ -47,6 +46,18 @@ class UserService:
         :return: The user
         """
         user = await self.user_repository.find_by_id(user_id)
+        return user
+
+    async def create_user(self, user: User) -> User:
+        """
+        Create the user
+
+        :param user: The user to create
+        :return: The created user
+        """
+        password_hasher = BcryptPasswordHasher()
+        user.password = password_hasher.hash_password(user.password)
+        user = await self.user_repository.create(user)
         return user
 
     async def update_user(self, user: User) -> User:
