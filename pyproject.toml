@@ -1,0 +1,50 @@
+[project]
+name = "clear-read-hub"
+version = "0.1.0"
+description = "Clear Read Hub is a Platform for readability"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+addopts = "-m 'not integration'"
+markers = [
+    "integration: tests that need running MongoDB, Redis and Azurite services",
+]
+filterwarnings = ["error::pytest.PytestUnraisableExceptionWarning"]
+
+[tool.coverage.run]
+source = ["src"]
+omit = ["src/module/infrastructure/machine_learning/*"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+extend-exclude = ["src/module/infrastructure/machine_learning"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "ASYNC"]
+ignore = [
+    "E402",  # section docstrings between imports are part of the code style
+    "E501",  # line length is handled by black
+    "UP009", # keep the utf-8 coding headers
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105", "S106"]
+"main.py" = ["S104"]  # local development server
+# token types ("bearer", "access") are not secrets
+"src/module/domain/entities/security/token.py" = ["S105"]
+"src/module/infrastructure/security/jwt_token_service.py" = ["S105"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["src", "tests"]
