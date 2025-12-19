@@ -1,21 +1,41 @@
-from pymongo import MongoClient
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
-# Import the service files file
-from src.service_config import serviceConfig
+__author__ = "luigelo@ldvloper.com"
+
+from pymongo import ASCENDING, DESCENDING, AsyncMongoClient
+from pymongo.asynchronous.database import AsyncDatabase
+
+from src.service_config import ServiceConfig
 
 
 class DatabaseContext:
-    def __init__(self):
-        self.client = MongoClient(serviceConfig.MONGO_INITDB_CONNECTION_STRING)
-        self.database = self.client[serviceConfig.MONGODB_DATABASE_NAME]
+    """
+    Owns the MongoDB client. One instance is shared by the whole process.
+    """
 
-    def get_client(self):
-        return self.client
+    def __init__(self, client: AsyncMongoClient, database_name: str):
+        self.client = client
+        self.database: AsyncDatabase = client[database_name]
 
-    def get_database(self):
-        return self.database
+    @classmethod
+    def from_settings(cls, settings: ServiceConfig) -> "DatabaseContext":
+        client = AsyncMongoClient(
+            settings.MONGODB_URI,
+            tz_aware=True,
+            serverSelectionTimeoutMS=settings.MONGODB_TIMEOUT_MS,
+            appname=settings.SERVICE_NAME,
+        )
+        return cls(client, settings.MONGODB_DATABASE_NAME)
 
+    async def ensure_indexes(self) -> None:
+        await self.database.users.create_index([("email", ASCENDING)], unique=True)
+        await self.database.documents.create_index(
+            [("owner_id", ASCENDING), ("created_at", DESCENDING)]
+        )
 
-if __name__ == "__main__":
-    db_client = DatabaseContext()
-    main_database = db_client.get_database()
+    async def ping(self) -> None:
+        await self.database.command("ping")
+
+    async def close(self) -> None:
+        await self.client.close()
