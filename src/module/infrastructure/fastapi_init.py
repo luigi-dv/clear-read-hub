@@ -3,70 +3,109 @@
 
 __author__ = "luigelo@ldvloper.com"
 
-import sentry_sdk
-from sentry_sdk.integrations.fastapi import FastApiIntegration
-from sentry_sdk.integrations.starlette import StarletteIntegration
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
 """
     Global Modules
 """
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
+from fastapi.responses import JSONResponse
 
 """
     Core Modules
 """
-from src.service_config import serviceConfig
+from src.service_config import ServiceConfig, get_settings
 
 """
     Infrastructure Modules
 """
-from src.module.infrastructure.logging.sentry_logging import SentryLogger
+from src.module.domain.exceptions import (
+    AuthenticationError,
+    ConflictError,
+    DomainError,
+    FileTooLargeError,
+    InvalidInputError,
+    NotFoundError,
+    PermissionDeniedError,
+    UnsupportedFileTypeError,
+)
+from src.module.infrastructure.container import Container, build_container
+from src.module.infrastructure.logging.sentry_logging import (
+    configure_logging,
+    configure_sentry,
+)
 
-"""
-    Tools Modules
-"""
+# Most specific classes first
+_STATUS_CODES: list[tuple[type[DomainError], int]] = [
+    (FileTooLargeError, 413),
+    (UnsupportedFileTypeError, 415),
+    (InvalidInputError, 422),
+    (NotFoundError, 404),
+    (ConflictError, 409),
+    (AuthenticationError, 401),
+    (PermissionDeniedError, 403),
+]
 
-# Load Configuration
-# response_file = load_config()
-# settings = Reader(config_file=response_file)
 
+def get_application(
+    settings: ServiceConfig | None = None, container: Container | None = None
+) -> FastAPI:
+    """
+    Create the FastAPI application.
 
-def get_application() -> FastAPI:
-    # FastAPI
-    app = __initialize_application()
-    # OpenAPI
+    :param settings: The configuration, read from the environment by default
+    :param container: Prebuilt dependencies, used by the tests
+    """
+    settings = settings or get_settings()
+    configure_logging(settings)
+    configure_sentry(settings)
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        app.state.container = container or build_container(settings)
+        await app.state.container.startup()
+        try:
+            yield
+        finally:
+            await app.state.container.shutdown()
+
+    app = FastAPI(
+        title=settings.SERVICE_NAME,
+        description=settings.SERVICE_DESCRIPTION,
+        version=settings.SERVICE_VERSION,
+        lifespan=lifespan,
+    )
+
+    if settings.cors_origins:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=settings.cors_origins,
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+
+    app.add_exception_handler(DomainError, _domain_error_handler)
+
+    # Imported here to avoid a circular import with the routers
+    from src.routers.routes import router
+
+    app.include_router(router)
     app.openapi = __custom_openapi(app)
     return app
 
 
-def __initialize_application() -> FastAPI:
-    # Initialize Sentry
-    sentry_sdk.init(
-        dsn=serviceConfig.SENTRY_DSN,
-        # Set traces_sample_rate to 1.0 to capture 100%
-        enable_tracing=True,
-        traces_sample_rate=1.0,
-        profiles_sample_rate=1.0,
-        integrations=[
-            StarletteIntegration(transaction_style="endpoint"),
-            FastApiIntegration(transaction_style="endpoint"),
-        ],
+async def _domain_error_handler(request: Request, exc: DomainError) -> JSONResponse:
+    status_code = next(
+        (code for cls, code in _STATUS_CODES if isinstance(exc, cls)), 400
     )
-
-    # FastAPI
-    app = FastAPI(
-        title=serviceConfig.SERVICE_NAME,
-        description=serviceConfig.SERVICE_DESCRIPTION,
-        version=serviceConfig.SERVICE_VERSION,
+    headers = {"WWW-Authenticate": "Bearer"} if status_code == 401 else None
+    return JSONResponse(
+        status_code=status_code, content={"detail": exc.message}, headers=headers
     )
-
-    # Add Sentry Middleware
-    sentry_logger = SentryLogger(app)
-    sentry_logger.add_sentry_middleware()
-
-    # Return FastAPI
-    return app
 
 
 # OpenAPI
@@ -80,7 +119,7 @@ def __custom_openapi(custom_app: FastAPI):
             version=custom_app.version,
             routes=custom_app.routes,
         )
-        http_methods = ["post", "get", "put", "delete"]
+        http_methods = ["post", "get", "put", "patch", "delete"]
         for method in openapi_schema["paths"]:
             for m in http_methods:
                 try:
