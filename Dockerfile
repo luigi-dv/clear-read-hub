@@ -1,37 +1,41 @@
-# Use the official Python image from the Docker Hub as a builder stage
-FROM python:3.11 as builder
+# Builder stage: install the dependencies in a virtual environment
+FROM python:3.12-slim AS builder
 
-# Set the working directory
-WORKDIR /app
+ENV PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# Copy the requirements file into the builder stage
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
 COPY requirements.txt .
+RUN pip install -r requirements.txt
 
-# Install dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Runtime stage
+FROM python:3.12-slim
 
-# Use the official Python image from the Docker Hub as a runtime stage
-FROM python:3.11-slim
+ENV PATH="/opt/venv/bin:$PATH" \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    LOCAL_STORAGE_PATH=/home/app/data/uploads
 
 # Create a group and user
-RUN groupadd -g 10999 app && useradd -r -u 10999 -g app app
+RUN groupadd -g 10999 app && useradd -r -u 10999 -g app -d /home/app app
 
-# Set the working directory
 WORKDIR /home/app
 
-# Copy the installed dependencies from the builder stage
-COPY --from=builder /usr/local /usr/local
+COPY --from=builder /opt/venv /opt/venv
+COPY --chown=app:app src ./src
+COPY --chown=app:app main.py worker.py entrypoint.sh ./
+RUN chmod +x entrypoint.sh && mkdir -p data/uploads && chown -R app:app data
 
-# Copy the source code into the runtime stage
-COPY --chown=app:app src /home/app/src
-COPY --chown=app:app main.py /home/app/main.py
-COPY --chown=app:app entrypoint.sh /home/app/entrypoint.sh
+# Run as the unprivileged user
+USER app
 
-# Change the entrypoint script permissions
-RUN chmod +x /home/app/entrypoint.sh
-
-# Expose port
 EXPOSE 8000
 
-# Set the entrypoint script to initiate the container
-ENTRYPOINT ["/home/app/entrypoint.sh"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/live', timeout=3)" || exit 1
+
+# `api` (default) or `worker`
+ENTRYPOINT ["./entrypoint.sh"]
+CMD ["api"]
