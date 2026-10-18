@@ -4,7 +4,6 @@
 venv
 .env
 data
-tests
 __pycache__
 *.pyc
 .pytest_cache

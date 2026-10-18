@@ -12,6 +12,36 @@ The service is built with FastAPI following Domain-Driven Design (DDD) and a por
 adapters architecture: the domain and application layers do not depend on FastAPI,
 MongoDB, Redis or Azure, which are plugged in at the edges.
 
+## Quickstart
+
+The only requirement is [Docker](https://docs.docker.com/get-docker/). No configuration
+file is needed.
+
+```bash
+git clone https://github.com/luigi-dv/clear-read-hub.git
+cd clear-read-hub
+
+docker compose up -d --build --wait     # API, worker, MongoDB, Redis, Azurite
+docker compose run --rm demo            # upload samples/sample.pdf, print its text
+```
+
+Then open <http://localhost:8000/docs>. With `make` installed the same is
+`make up` and `make demo`; `make help` lists every shortcut.
+
+| Task | make | docker compose |
+| --- | --- | --- |
+| Start the stack | `make up` | `docker compose up -d --build --wait` |
+| End to end demo | `make demo` | `docker compose run --rm demo` |
+| Run every test | `make test` | `docker compose run --rm tests` |
+| Lint | `make lint` | `docker compose run --rm tests sh -c "ruff check . && black --check ."` |
+| Follow logs | `make logs` | `docker compose logs -f api worker` |
+| Stop (keep data) | `make down` | `docker compose down` |
+| Stop and delete data | `make clean` | `docker compose down -v` |
+
+The stack uses development defaults, including a public JWT secret that the service
+refuses to start with when `ENVIRONMENT=production`. To change any setting, copy
+`.env.example` to `.env`: its values override the defaults.
+
 ## Architecture
 
 ```mermaid
@@ -105,17 +135,11 @@ curl localhost:8000/documents/<id>/text -H "Authorization: Bearer $TOKEN"
 
 ### With Docker Compose (full stack)
 
-Runs the API, the worker, MongoDB, Redis and Azurite (the local Azure Storage emulator).
+See [Quickstart](#quickstart). The stack runs the API, the worker, MongoDB, Redis and
+Azurite (the local Azure Storage emulator), each with a health check, and keeps its
+data in Docker volumes across restarts.
 
-```bash
-cp .env.example .env
-# Edit .env: set JWT_SECRET_KEY and MONGO_ROOT_PASSWORD
-docker compose up --build
-```
-
-The API is available at <http://localhost:8000/docs>.
-
-### Local development
+### Local development (without Docker for the app)
 
 Requires Python 3.11+ and a MongoDB instance. With the defaults
 (`QUEUE_BACKEND=inline`, `STORAGE_BACKEND=local`) no Redis, worker or Azure is needed:
@@ -167,11 +191,19 @@ ruff check . && black --check .
 - `tests/fuzz`: property based tests with Hypothesis for the code that handles
   untrusted input (file sniffing, file names, tokens, PDF parsing).
 - `tests/integration`: real MongoDB, Redis and Azurite, including the full pipeline
-  from upload to the worker. They are skipped unless the services are configured:
+  from upload to the worker. They are skipped unless the services are configured.
+
+The simplest way to run everything, integration tests included, is inside Docker:
+
+```bash
+docker compose run --rm tests        # or: make test
+```
+
+To run the integration tests from your own virtual environment instead:
 
 ```bash
 docker compose up -d mongodb redis azurite
-MONGODB_URI="mongodb://<user>:<password>@localhost:27017/?authSource=admin" \
+MONGODB_URI="mongodb://clearreadhub:clearreadhub@localhost:27017/?authSource=admin" \
 REDIS_URL=redis://localhost:6379/0 \
 AZ_STORAGE_CONNECTION_STRING="<Azurite connection string from .env.example>" \
 pytest -m integration
