@@ -1,0 +1,10 @@
+# Machine learning stack for the readability engine (work in progress).
+# Not needed to run the API or the worker.
+-r requirements.txt
+
+tensorflow
+tensorflow-hub
+tensorflow-text
+tf-models-official
+pandas
+numpy

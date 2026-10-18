@@ -6,14 +6,18 @@ __author__ = "luigelo@ldvloper.com"
 """
     Global Modules
 """
+from fastapi import Response, status
 from fastapi.routing import APIRouter
-from fastapi import Depends, HTTPException
 
 """
     API Modules
 """
-from src.module.domain.entities.security.user import User
-from src.module.application.services.security.user_service import UserService
+from src.module.infrastructure.serializers.security.user_schemas import (
+    UserCreate,
+    UserPublic,
+    UserUpdate,
+)
+from src.routers.dependencies import CurrentUser, DocumentServiceDep, UserServiceDep
 
 
 class Users:
@@ -35,101 +39,50 @@ class Users:
         Customized router for Users.
         """
 
-        @self.router.post("/", response_model=User)
-        async def create_user(user: User, service: UserService = Depends()):
+        @self.router.post(
+            "", response_model=UserPublic, status_code=status.HTTP_201_CREATED
+        )
+        async def create_user(user: UserCreate, service: UserServiceDep):
             """
-            Create a new user.
-
-            Parameters:
-            - `user` (User): The user details to be created.
-
-            Returns:
-            - `User`: The created user details.
+            Register a new user.
 
             Raises:
-            - `HTTPException`: If the user creation fails.
+            - `409`: If the email is already registered.
             """
+            return await service.register(user.email, user.password)
 
-            return await service.create_user(user)
-
-        @self.router.get("/{username}", response_model=User)
-        async def read_user(username: str, service: UserService = Depends()):
+        @self.router.get("/me", response_model=UserPublic)
+        async def read_current_user(current_user: CurrentUser):
             """
-            Get a specific user by username.
-
-            Parameters:
-            - `username` (str): The username of the user to retrieve.
-
-            Returns:
-            - `User`: The user details.
-
-            Raises:
-            - `HTTPException`: If the user is not found.
+            Get the authenticated user.
             """
+            return current_user
 
-            return await service.get_user(username)
-
-        @self.router.get("/id/{user_id}", response_model=User)
-        async def read_user_by_id(user_id: str, service: UserService = Depends()):
-            """
-            Get a specific user by user_id.
-
-            Parameters:
-            - `user_id` (str): The user_id of the user to retrieve.
-
-            Returns:
-            - `User`: The user details.
-
-            Raises:
-            - `HTTPException`: If the user is not found.
-            """
-
-            return await service.get_user_by_id(user_id)
-
-        @self.router.put("/", response_model=User)
-        async def update_user(
-            user: User,
-            current_user: User = Depends(UserService.get_current_user),
-            service: UserService = Depends(),
+        @self.router.patch("/me", response_model=UserPublic)
+        async def update_current_user(
+            changes: UserUpdate, current_user: CurrentUser, service: UserServiceDep
         ):
             """
-            Update an existing user.
+            Update the email and/or password of the authenticated user.
 
-            Parameters:
-            - `user` (User): The updated user details.
-            - `current_user` (User): The currently authenticated user.
-
-            Returns:
-            - `User`: The updated user details.
-
-            Raises:
-            - `HTTPException`: If the update fails or if the user making the request doesn't have enough permissions.
+            Changing the password requires `current_password`.
             """
+            return await service.update_user(
+                current_user,
+                current_password=changes.current_password,
+                email=changes.email,
+                password=changes.password,
+            )
 
-            if user.username != current_user.username:
-                raise HTTPException(status_code=400, detail="Not enough permissions")
-            return await service.update_user(user)
-
-        @self.router.delete("/{user_id}")
-        async def delete_user(
-            user_id: str,
-            current_user: User = Depends(UserService.get_current_user),
-            service: UserService = Depends(),
+        @self.router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
+        async def delete_current_user(
+            current_user: CurrentUser,
+            service: UserServiceDep,
+            documents: DocumentServiceDep,
         ):
             """
-            Delete a user.
-
-            Parameters:
-            - `user_id` (str): The user_id of the user to delete.
-            - `current_user` (User): The currently authenticated user.
-
-            Returns:
-            - `Dict[str, str]`: A dictionary with a success message.
-
-            Raises:
-            - `HTTPException`: If the deletion fails or if the user making the request doesn't have enough permissions.
+            Delete the authenticated user and all of their documents.
             """
-
-            if user_id != current_user.id:
-                raise HTTPException(status_code=400, detail="Not enough permissions")
-            return await service.delete_user(user_id)
+            await documents.delete_all_documents(current_user.id)
+            await service.delete_user(current_user.id)
+            return Response(status_code=status.HTTP_204_NO_CONTENT)

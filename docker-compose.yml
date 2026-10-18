@@ -1,35 +1,83 @@
-version: '3.8'
+# Full stack: API + worker + MongoDB + Redis + Azurite.
+#
+#   cp .env.example .env   # then set JWT_SECRET_KEY and the MongoDB password
+#   docker compose up --build
+#
+# Service addresses inside the network override the localhost values of .env.
+
+x-app: &app
+  build:
+    context: .
+    dockerfile: Dockerfile
+  env_file: .env
+  environment:
+    MONGODB_URI: mongodb://${MONGO_ROOT_USERNAME:?set MONGO_ROOT_USERNAME in .env}:${MONGO_ROOT_PASSWORD:?set MONGO_ROOT_PASSWORD in .env}@mongodb:27017/?authSource=admin
+    REDIS_URL: redis://redis:6379/0
+    QUEUE_BACKEND: rq
+    STORAGE_BACKEND: azure
+    AZ_STORAGE_CONNECTION_STRING: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;
+  depends_on:
+    mongodb:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+    azurite:
+      condition: service_started
+  restart: unless-stopped
+
 services:
-  fastapi_app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+  api:
+    <<: *app
+    command: ["api"]
     ports:
       - "8000:8000"
-    environment:
-      - DATABASE_URL=mongodb://mongodb:27017
-    depends_on:
-      - mongodb
-    restart: unless-stopped
+
+  worker:
+    <<: *app
+    command: ["worker"]
+    healthcheck:
+      disable: true
+
   mongodb:
-    image: mongo:latest
+    image: mongo:7
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
     volumes:
       - mongodb_data:/data/db
     ports:
-      - "27017:27017"
-    environment:
-      - MONGODB_INITDB_ROOT_USERNAME=admin
-      - MONGODB_INITDB_ROOT_PASSWORD=root
+      - "127.0.0.1:27017:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
-  azurite:
-    build:
-        context: .
-        dockerfile: ./src/module/infrastructure/services/external/azure/storage/azurite/Dockerfile
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
     ports:
-      - "10000:10000"
-      - "10001:10001"
-      - "10002:10002"
+      - "127.0.0.1:6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite
+    command: ["azurite-blob", "--blobHost", "0.0.0.0", "--location", "/data", "--skipApiVersionCheck"]
+    volumes:
+      - azurite_data:/data
+    ports:
+      - "127.0.0.1:10000:10000"
     restart: unless-stopped
 
 volumes:
   mongodb_data:
+  redis_data:
+  azurite_data:

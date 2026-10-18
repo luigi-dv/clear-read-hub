@@ -3,134 +3,104 @@
 
 __author__ = "luigelo@ldvloper.com"
 
-from pydantic_settings import BaseSettings
-from pydantic import Field, field_validator
+from enum import StrEnum
+from functools import lru_cache
+
+from pydantic import Field, SecretStr, model_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class ServiceConfig(BaseSettings, object):
+class Environment(StrEnum):
+    DEVELOPMENT = "development"
+    TEST = "test"
+    PRODUCTION = "production"
+
+
+class StorageBackend(StrEnum):
+    LOCAL = "local"
+    AZURE = "azure"
+
+
+class QueueBackend(StrEnum):
+    # Process documents inside the API process, right after the upload.
+    INLINE = "inline"
+    # Hand documents to a Redis Queue (RQ) worker.
+    RQ = "rq"
+
+
+class ServiceConfig(BaseSettings):
+    """
+    Service configuration, read from environment variables and an optional `.env` file.
+    """
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=True,
+        extra="ignore",
+    )
+
     # SERVICE
-    SERVICE_NAME: str = Field(default="Clear Read Hub Service", env="SERVICE_NAME")
-    SERVICE_DESCRIPTION: str = Field(
-        default="Clear Read Hub is a Platform for readability",
-        env="SERVICE_DESCRIPTION",
-    )
-    SERVICE_VERSION: str = Field(default="0.0.1", env="SERVICE_VERSION")
-    # OAuth
-    SERVICE_OAUTH_CLIENT_ID: str = Field(default="", env="SERVICE_OAUTH_CLIENT_ID")
-    SERVICE_OAUTH_CLIENT_SECRET: str = Field(
-        default="", env="SERVICE_OAUTH_CLIENT_SECRET"
-    )
-    SERVICE_OAUTH_ENCODE_ALGORITHM: str = Field(
-        default="HS256", env="SERVICE_OAUTH_ENCODE_ALGORITHM"
-    )
-    SERVICE_OAUTH_EXPIRES_IN: int = Field(default=15, env="SERVICE_OAUTH_EXPIRES_IN")
+    SERVICE_NAME: str = "Clear Read Hub Service"
+    SERVICE_DESCRIPTION: str = "Clear Read Hub is a Platform for readability"
+    SERVICE_VERSION: str = "0.1.0"
+    ENVIRONMENT: Environment = Environment.DEVELOPMENT
+    LOG_LEVEL: str = "INFO"
+
+    # SECURITY
+    JWT_SECRET_KEY: SecretStr = Field(min_length=32)
+    JWT_ALGORITHM: str = "HS256"
+    JWT_EXPIRES_MINUTES: int = Field(default=15, gt=0)
+    BCRYPT_ROUNDS: int = Field(default=12, ge=4, le=31)
+
+    # CORS (comma separated list of origins)
+    CORS_ALLOWED_ORIGINS: str = ""
+
     # MONGODB
-    MONGODB_INITDB_ROOT_HOST: str = Field(
-        default="localhost", env="MONGODB_INITDB_ROOT_HOST"
-    )
-    MONGODB_INITDB_ROOT_PORT: int = Field(default=27017, env="MONGODB_INITDB_ROOT_PORT")
-    MONGODB_INITDB_ROOT_USERNAME: str = Field(
-        default="clearreadhub", env="MONGODB_INITDB_ROOT_USERNAME"
-    )
-    MONGODB_INITDB_ROOT_PASSWORD: str = Field(
-        default="root", env="MONGODB_INITDB_ROOT_PASSWORD"
-    )
-    MONGODB_DATABASE_NAME: str = Field(
-        default="clearreadhub", env="MONGODB_DATABASE_NAME"
-    )
-    MONGO_INITDB_CONNECTION_STRING: str = ""
-    # Azure
-    AZ_STORAGE_ACCOUNT_NAME: str = Field(
-        default="devstoreaccount1", env="AZ_STORAGE_ACCOUNT_NAME"
-    )
-    AZ_STORAGE_ACCOUNT_KEY: str = Field(
-        default="Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==",
-        env="AZ_STORAGE_ACCOUNT_KEY",
-    )
-    AZ_STORAGE_BLOB_ENDPOINT: str = Field(
-        default="http://127.0.0.1:10000/devstoreaccount1",
-        env="AZ_STORAGE_BLOB_ENDPOINT",
-    )
-    AZ_STORAGE_HTTPS: bool = Field(default=False, env="AZ_STORAGE_HTTPS")
-    AZ_STORAGE_CONTAINER_NAME: str = Field(default="", env="AZ_STORAGE_CONTAINER_NAME")
-    AZ_STORAGE_CONNECTION_STRING: str = ""
-    # Sentry
-    SENTRY_DSN: str = Field(default="", env="SENTRY_DSN")
-    # CORS
-    APP_CONSUMER_ORIGIN: str = Field(default="", env="APP_CONSUMER_ORIGIN")
+    MONGODB_URI: str = "mongodb://localhost:27017"
+    MONGODB_DATABASE_NAME: str = "clearreadhub"
+    MONGODB_TIMEOUT_MS: int = Field(default=5000, gt=0)
 
-    @field_validator("AZ_STORAGE_CONNECTION_STRING", check_fields=True)
-    def generate_connection_string(cls, v, values):
-        az_storage_https = (
-            values.data["AZ_STORAGE_HTTPS"]
-            if "AZ_STORAGE_HTTPS" in values.data
-            else None
-        )
-        az_storage_account_name = (
-            values.data["AZ_STORAGE_ACCOUNT_NAME"]
-            if "AZ_STORAGE_ACCOUNT_NAME" in values.data
-            else None
-        )
-        az_storage_account_key = (
-            values.data["AZ_STORAGE_ACCOUNT_KEY"]
-            if "AZ_STORAGE_ACCOUNT_KEY" in values.data
-            else None
-        )
-        az_storage_blob_endpoint = (
-            values.data["AZ_STORAGE_BLOB_ENDPOINT"]
-            if "AZ_STORAGE_BLOB_ENDPOINT" in values.data
-            else None
-        )
+    # STORAGE
+    STORAGE_BACKEND: StorageBackend = StorageBackend.LOCAL
+    LOCAL_STORAGE_PATH: str = "./data/uploads"
+    AZ_STORAGE_CONNECTION_STRING: SecretStr | None = None
+    AZ_STORAGE_CONTAINER_NAME: str = "documents"
 
-        if all(
-            item is not None
-            for item in [
-                az_storage_https,
-                az_storage_account_name,
-                az_storage_account_key,
-                az_storage_blob_endpoint,
-            ]
+    # DOCUMENTS
+    MAX_UPLOAD_BYTES: int = Field(default=10 * 1024 * 1024, gt=0)
+    MAX_PDF_PAGES: int = Field(default=500, gt=0)
+
+    # QUEUE
+    QUEUE_BACKEND: QueueBackend = QueueBackend.INLINE
+    REDIS_URL: str = "redis://localhost:6379/0"
+    QUEUE_NAME: str = "documents"
+    JOB_TIMEOUT_SECONDS: int = Field(default=300, gt=0)
+    JOB_MAX_RETRIES: int = Field(default=3, ge=0)
+
+    # SENTRY
+    SENTRY_DSN: str = ""
+    SENTRY_TRACES_SAMPLE_RATE: float = Field(default=0.1, ge=0.0, le=1.0)
+
+    @model_validator(mode="after")
+    def check_storage_backend(self) -> "ServiceConfig":
+        if (
+            self.STORAGE_BACKEND == StorageBackend.AZURE
+            and not self.AZ_STORAGE_CONNECTION_STRING
         ):
-            return (
-                f"DefaultEndpointsProtocol={('https', 'http')[az_storage_https]};"
-                f"AccountName={az_storage_account_name};"
-                f"AccountKey={az_storage_account_key};"
-                f"BlobEndpoint={az_storage_blob_endpoint};"
+            raise ValueError(
+                "AZ_STORAGE_CONNECTION_STRING is required when STORAGE_BACKEND=azure"
             )
+        return self
 
-    @field_validator("MONGO_INITDB_CONNECTION_STRING", check_fields=True)
-    def generate_mongo_connection_string(cls, v, values):
-        mongodb_init_db_root_host = (
-            values.data["MONGODB_INITDB_ROOT_HOST"]
-            if "MONGODB_INITDB_ROOT_HOST" in values.data
-            else None
-        )
-        mongodb_init_db_root_port = (
-            values.data["MONGODB_INITDB_ROOT_PORT"]
-            if "MONGODB_INITDB_ROOT_PORT" in values.data
-            else None
-        )
-        mongodb_init_db_root_username = (
-            values.data["MONGODB_INITDB_ROOT_USERNAME"]
-            if "MONGODB_INITDB_ROOT_USERNAME" in values.data
-            else None
-        )
-        mongodb_init_db_root_password = (
-            values.data["MONGODB_INITDB_ROOT_PASSWORD"]
-            if "MONGODB_INITDB_ROOT_PASSWORD" in values.data
-            else None
-        )
-
-        if all(
-            item is not None
-            for item in [mongodb_init_db_root_username, mongodb_init_db_root_password]
-        ):
-            return f"mongodb://{mongodb_init_db_root_username}:{mongodb_init_db_root_password}@{mongodb_init_db_root_host}:{mongodb_init_db_root_port}/"
-
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = True
+    @property
+    def cors_origins(self) -> list[str]:
+        return [o.strip() for o in self.CORS_ALLOWED_ORIGINS.split(",") if o.strip()]
 
 
-serviceConfig = ServiceConfig()
+@lru_cache
+def get_settings() -> ServiceConfig:
+    """
+    Load the service configuration once per process.
+    """
+    return ServiceConfig()

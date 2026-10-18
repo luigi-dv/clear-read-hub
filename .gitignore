@@ -142,3 +142,5 @@ gunicorn_conf.py
 # JetBrains IDEs
 .idea
 *.iml
+# Local uploads
+data/

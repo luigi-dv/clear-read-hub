@@ -1,41 +1,26 @@
-# This requirements file lists all third-party dependencies for this project.
+# Runtime dependencies of the API and the worker.
 #
 # Run 'pip install -r requirements.txt'
+# Development tools are in requirements-dev.txt, the machine learning stack in
+# requirements-ml.txt.
 
-
-# Core dependencies
-wheel
-uvicorn[standard]
-python-multipart
-# FastAPI dependencies
-fastapi
-pydantic==2.6.3
-pydantic-settings
-result4utility
-# Infrastructure and persistence dependencies
-pymongo[srv]
-# External services dependencies
-redis
-azure-common
-azure-storage-blob
-# Logging dependencies
-sentry-sdk[fastapi]
-# Text Processing dependencies
-PyMuPDF
-# Security dependencies
-passlib[bcrypt]
-python-jose[cryptography]
-# Code Formatting
-black[d]
-# Clients
-httpx
-# Machine Learning
-tensorflow
-tf-models-official
-tensorflow-text
-# Post Processing & Data
-pandas
-numpy
-
-# Testing
-hypothesis
+# Web framework
+fastapi>=0.115,<1.0
+uvicorn[standard]>=0.32
+python-multipart>=0.0.18
+pydantic[email]>=2.9,<3.0
+pydantic-settings>=2.6,<3.0
+# Persistence (AsyncMongoClient)
+pymongo>=4.13,<5.0
+# Queue
+redis>=5.2
+rq>=2.0,<3.0
+# Storage
+azure-storage-blob>=12.24,<13.0
+# Text extraction
+PyMuPDF>=1.25
+# Security
+bcrypt>=4.2
+PyJWT>=2.10,<3.0
+# Logging
+sentry-sdk[fastapi]>=2.19,<3.0

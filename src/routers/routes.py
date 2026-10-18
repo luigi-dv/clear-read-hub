@@ -7,15 +7,15 @@ __author__ = "luigelo@ldvloper.com"
 """
     Global Modules
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 
 """
     Routes modules
 """
 from src.routers.document.document import Document
+from src.routers.health.health import Health
 from src.routers.security.oauth_router import OAuth
 from src.routers.security.user_router import Users
-from src.routers.text.extract import TextExtract
 
 """
     Initialize the Router
@@ -23,10 +23,15 @@ from src.routers.text.extract import TextExtract
 router = APIRouter()
 
 
-@router.get("/")
+@router.get("/", tags=["Health"])
 async def root():
-    raise HTTPException(status_code=200, detail="The API is alive")
+    return {"status": "ok", "detail": "The API is alive"}
 
+
+"""
+    Health Routes
+"""
+router.include_router(Health.get_router(), prefix="/health", tags=["Health"])
 
 """
     Security Routes
@@ -41,9 +46,4 @@ router.include_router(Users.get_router(), prefix="/users", tags=["Users"])
 """
     Document Routes
 """
-router.include_router(Document.get_router(), prefix="/document", tags=["Documents"])
-
-"""
-    Text Routes
-"""
-router.include_router(TextExtract.get_router(), prefix="/text", tags=["Processing"])
+router.include_router(Document.get_router(), prefix="/documents", tags=["Documents"])

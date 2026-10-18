@@ -3,68 +3,165 @@
 
 __author__ = "luigelo@ldvloper.com"
 
-from sentry_sdk import capture_exception
-from fastapi import UploadFile, HTTPException
-from src.module.domain.entities.files.file import File
-from src.module.infrastructure.services.external.azure.storage.container_client import (
-    AzureStorageContainerClient,
+import asyncio
+import hashlib
+import logging
+from typing import BinaryIO
+
+from src.module.domain.entities.documents.document import (
+    Document,
+    DocumentStatus,
+    DocumentText,
 )
-from src.module.infrastructure.services.external.azure.storage.blob_sas import (
-    AzureStorageBlobSas,
+from src.module.domain.exceptions import (
+    DocumentNotReadyError,
+    FileTooLargeError,
+    NotFoundError,
+    UnsupportedFileTypeError,
 )
-from src.module.infrastructure.interfaces.files.file_interface import (
-    AzureStorageFileInterface,
+from src.module.domain.repositories.documents.document_repository import (
+    IDocumentRepository,
 )
+from src.module.domain.repositories.files.file_storage import IFileStorage
+from src.module.domain.services.documents.processing_queue import (
+    DocumentProcessingQueue,
+)
+from src.module.domain.value_objects.files.file_name import sanitize_file_name
+from src.module.domain.value_objects.files.file_size import FileSize
+from src.module.domain.value_objects.files.file_type import FileType
+
+logger = logging.getLogger(__name__)
+
+_READ_CHUNK_BYTES = 1024 * 1024
+_DELETE_PAGE_SIZE = 100
 
 
 class DocumentService:
     """
-    Proxy Class for Document Service
+    Upload, list, read and delete the documents of a user.
     """
 
-    def __init__(self):
-        self.repository = AzureStorageFileInterface()
+    def __init__(
+        self,
+        repository: IDocumentRepository,
+        storage: IFileStorage,
+        queue: DocumentProcessingQueue,
+        max_upload_bytes: int,
+    ):
+        self.repository = repository
+        self.storage = storage
+        self.queue = queue
+        self.max_upload_bytes = max_upload_bytes
 
-    @staticmethod
-    async def get_document_url(file_name):
+    async def upload(
+        self, owner_id: str, filename: str | None, file: BinaryIO
+    ) -> Document:
         """
-        Get the URL of a file from the Azure Storage
+        Validate and store a file, then schedule its processing.
 
-        :param file_name: The name of the file
-        :return: The URL of the file with the SAS token
+        :param owner_id: The id of the user uploading the file
+        :param filename: The client file name, used for display only
+        :param file: The file content
+        :return: The created document, in the pending state
         """
-        container_client = AzureStorageContainerClient().client
-        # Get the blob client
-        blob_client = container_client.get_blob_client(file_name)
-        azure_blob_sas = AzureStorageBlobSas(blob_client)
+        content = await asyncio.to_thread(self._read_limited, file)
+        size = FileSize(len(content), self.max_upload_bytes).size
+        file_type = FileType.sniff(content)
+        if file_type is None:
+            raise UnsupportedFileTypeError(
+                "File type not allowed. Supported types: "
+                + ", ".join(t.value for t in FileType)
+                + "."
+            )
 
-        # Return the blob URL with the SAS token
-        return azure_blob_sas.generate_read_sas()
+        document = Document(
+            owner_id=owner_id,
+            filename=sanitize_file_name(filename),
+            file_type=file_type,
+            size=size,
+            sha256=hashlib.sha256(content).hexdigest(),
+            storage_key="",
+        )
+        document.storage_key = f"{owner_id}/{document.id}{file_type.extension}"
 
-    async def upload_file(self, file: UploadFile):
-        """
-        Upload a file to the Azure Storage
-
-        :param file: The file to upload
-        :return: The URL of the uploaded file with the SAS token
-        """
-
-        # Create a File class instance from the UploadFile instance
-        my_file = File(file)
+        await self.storage.save(document.storage_key, content, file_type.media_type)
+        try:
+            await self.repository.create(document)
+        except Exception:
+            # Do not leave orphan files behind when the record cannot be stored
+            await self.storage.delete(document.storage_key)
+            raise
 
         try:
-            # Validate the file
-            await my_file.validate()
-            # Upload the file
-            blob_client = await self.repository.save(my_file)
-            # Return the blob URL
-            return {
-                "url": await self.repository.get_sas_token_url(blob_client),
-                "filename": file.filename,
-                "status": "success",
-            }
-        except ValueError as e:
-            # Log the error
-            capture_exception(error=e)
-            # Raise an HTTPException
-            raise HTTPException(status_code=400, detail=str(e))
+            await self.queue.enqueue(document.id)
+        except Exception as e:
+            logger.exception("Could not enqueue document %s", document.id)
+            document.mark_failed(f"Could not schedule processing: {e}")
+            await self.repository.update(document)
+        return document
+
+    async def list_documents(
+        self, owner_id: str, limit: int, offset: int = 0
+    ) -> list[Document]:
+        return await self.repository.list_by_owner(owner_id, limit, offset)
+
+    async def get_document(self, owner_id: str, document_id: str) -> Document:
+        """
+        Get a document of the user.
+
+        Documents of other users are reported as not found, so their ids cannot be probed.
+        """
+        document = await self.repository.get(document_id)
+        if document is None or document.owner_id != owner_id:
+            raise NotFoundError("Document not found.")
+        return document
+
+    async def get_content(
+        self, owner_id: str, document_id: str
+    ) -> tuple[Document, bytes]:
+        document = await self.get_document(owner_id, document_id)
+        return document, await self.storage.read(document.storage_key)
+
+    async def get_text(self, owner_id: str, document_id: str) -> DocumentText:
+        document = await self.get_document(owner_id, document_id)
+        if document.status != DocumentStatus.COMPLETED:
+            raise DocumentNotReadyError(
+                f"The document is {document.status.value}, its text is not available."
+            )
+        text = await self.repository.get_text(document_id)
+        if text is None:
+            raise NotFoundError("Document text not found.")
+        return text
+
+    async def delete_document(self, owner_id: str, document_id: str) -> None:
+        document = await self.get_document(owner_id, document_id)
+        await self.storage.delete(document.storage_key)
+        await self.repository.delete(document.id)
+
+    async def delete_all_documents(self, owner_id: str) -> int:
+        """
+        Delete every document of a user, used when the user account is deleted.
+
+        :return: The number of deleted documents
+        """
+        deleted = 0
+        while documents := await self.repository.list_by_owner(
+            owner_id, _DELETE_PAGE_SIZE
+        ):
+            for document in documents:
+                await self.storage.delete(document.storage_key)
+                await self.repository.delete(document.id)
+                deleted += 1
+        return deleted
+
+    def _read_limited(self, file: BinaryIO) -> bytes:
+        # Read at most one byte more than allowed, so huge uploads are not loaded
+        buffer = bytearray()
+        while chunk := file.read(_READ_CHUNK_BYTES):
+            buffer.extend(chunk)
+            if len(buffer) > self.max_upload_bytes:
+                raise FileTooLargeError(
+                    "File size exceeds the maximum limit of "
+                    f"{self.max_upload_bytes} bytes."
+                )
+        return bytes(buffer)

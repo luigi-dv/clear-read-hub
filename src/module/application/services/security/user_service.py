@@ -3,19 +3,14 @@
 
 __author__ = "luigelo@ldvloper.com"
 
-from typing import Annotated
-from jose import JWTError, jwt
+import asyncio
 
-from src.module.infrastructure.utilities.hashing.bcrypt_password_hasher import (
-    BcryptPasswordHasher,
-)
-from src.service_config import serviceConfig
-from fastapi import Depends, HTTPException, status
-from src.module.infrastructure.configuration.security import oauth2_scheme
+from src.module.domain.entities.security.token import Token
 from src.module.domain.entities.security.user import User
-from src.module.domain.entities.security.token_data import TokenData
-from src.module.infrastructure.interfaces.security.user_repository import UserRepository
-from src.module.infrastructure.utilities.hashing.password import verify_password
+from src.module.domain.exceptions import AuthenticationError, NotFoundError
+from src.module.domain.repositories.security.user_repository import IUserRepository
+from src.module.domain.services.security.password_hasher import PasswordHasher
+from src.module.domain.services.security.token_service import TokenService
 
 
 class UserService:
@@ -25,104 +20,125 @@ class UserService:
     This class is responsible for handling the user business logic and operations.
     """
 
-    def __init__(self):
-        self.user_repository = UserRepository()
+    def __init__(
+        self,
+        user_repository: IUserRepository,
+        password_hasher: PasswordHasher,
+        token_service: TokenService,
+    ):
+        self.user_repository = user_repository
+        self.password_hasher = password_hasher
+        self.token_service = token_service
+        self._dummy_hash: str | None = None
 
-    async def get_user(self, email: str) -> User:
+    async def register(self, email: str, password: str) -> User:
         """
-        Get the user by email
+        Create a new user
 
         :param email: The user email
-        :return: The user
+        :param password: The plain password
+        :return: The created user
+        :raises ConflictError: If the email is already registered
         """
-        user = await self.user_repository.find_by_email(email)
-        return user
+        hashed_password = await self._hash(password)
+        user = User(email=_normalize_email(email), hashed_password=hashed_password)
+        return await self.user_repository.create(user)
 
-    async def get_user_by_id(self, user_id: str) -> User:
+    async def get_user(self, user_id: str) -> User:
         """
         Get the user by id
 
         :param user_id: The user id
         :return: The user
+        :raises NotFoundError: If the user does not exist
         """
         user = await self.user_repository.find_by_id(user_id)
+        if user is None:
+            raise NotFoundError("User not found.")
         return user
 
-    async def create_user(self, user: User) -> User:
+    async def update_user(
+        self,
+        user: User,
+        current_password: str | None,
+        email: str | None = None,
+        password: str | None = None,
+    ) -> User:
         """
-        Create the user
+        Update the email and/or the password of a user.
 
-        :param user: The user to create
-        :return: The created user
-        """
-        password_hasher = BcryptPasswordHasher()
-        user.password = password_hasher.hash_password(user.password)
-        user = await self.user_repository.create(user)
-        return user
+        Changing the password requires the current password.
 
-    async def update_user(self, user: User) -> User:
-        """
-        Update the user
-
-        :param user: User to update
         :return: The updated user
         """
-        user = await self.user_repository.update(user)
-        return user
+        if password is not None:
+            if current_password is None or not await self._verify(
+                current_password, user.hashed_password
+            ):
+                raise AuthenticationError("The current password is not correct.")
+            user.hashed_password = await self._hash(password)
+        if email is not None:
+            user.email = _normalize_email(email)
+        user.touch()
+        return await self.user_repository.update(user)
 
-    async def delete_user(self, user_id: str) -> bool:
+    async def delete_user(self, user_id: str) -> None:
         """
         Delete the user
 
         :param user_id: The user id
-        :return: The result of the operation
         """
-        result = await self.user_repository.delete(user_id)
-        return result
+        if not await self.user_repository.delete(user_id):
+            raise NotFoundError("User not found.")
 
-    @staticmethod
-    async def authenticate_user(email: str, password: str):
+    async def authenticate(self, email: str, password: str) -> Token:
         """
-        Authenticate the user
+        Check the credentials of a user and issue an access token.
 
         :param email: The user email
         :param password: The user password
-        :return: The user
+        :return: The access token
+        :raises AuthenticationError: If the credentials are not valid
         """
-        user = await UserService().get_user(email=email)
-        if not user:
-            return False
-        if not verify_password(password, user.hashed_password):
-            return False
-        return user
-
-    @staticmethod
-    async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
-        """
-        Get the current user from the token
-
-        :param token: The token
-        :return: The user
-        """
-
-        credentials_exception = HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-        try:
-            payload = jwt.decode(
-                token,
-                serviceConfig.SERVICE_OAUTH_CLIENT_SECRET,
-                algorithms=[serviceConfig.SERVICE_OAUTH_ENCODE_ALGORITHM],
-            )
-            username: str = payload.get("sub")
-            if username is None:
-                raise credentials_exception
-            token_data = TokenData(email=username)
-        except JWTError:
-            raise credentials_exception
-        user = UserService().get_user(email=token_data.email)
+        user = await self.user_repository.find_by_email(_normalize_email(email))
         if user is None:
-            raise credentials_exception
+            # Hash anyway so response times do not reveal which emails exist
+            await self._verify(password, await self._get_dummy_hash())
+            raise AuthenticationError("Incorrect email or password.")
+        if not await self._verify(password, user.hashed_password):
+            raise AuthenticationError("Incorrect email or password.")
+        if user.disabled:
+            raise AuthenticationError("The user is disabled.")
+        return self.token_service.issue(user.id)
+
+    async def get_current_user(self, token: str) -> User:
+        """
+        Get the user an access token was issued for.
+
+        :param token: The access token
+        :return: The user
+        :raises AuthenticationError: If the token or the user are not valid
+        """
+        user_id = self.token_service.verify(token)
+        user = await self.user_repository.find_by_id(user_id)
+        if user is None or user.disabled:
+            raise AuthenticationError()
         return user
+
+    # bcrypt is CPU bound on purpose: keep it off the event loop
+    async def _hash(self, password: str) -> str:
+        return await asyncio.to_thread(self.password_hasher.hash_password, password)
+
+    async def _verify(self, password: str, hashed_password: str) -> bool:
+        return await asyncio.to_thread(
+            self.password_hasher.verify_password, password, hashed_password
+        )
+
+    async def _get_dummy_hash(self) -> str:
+        if self._dummy_hash is None:
+            self._dummy_hash = await self._hash("dummy-password-for-timing")
+        return self._dummy_hash
+
+
+def _normalize_email(email: str) -> str:
+    return email.strip().lower()
