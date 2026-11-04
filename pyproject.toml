@@ -3,6 +3,9 @@ name = "clear-read-hub"
 version = "0.1.0"
 description = "Clear Read Hub is a Platform for readability"
 requires-python = ">=3.11"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+authors = [{ name = "Luigi Davila" }]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

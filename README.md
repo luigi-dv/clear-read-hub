@@ -1,6 +1,7 @@
 # Clear Read Hub
 
 [![CI](https://github.com/luigi-dv/clear-read-hub/actions/workflows/ci.yml/badge.svg)](https://github.com/luigi-dv/clear-read-hub/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Code Style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 Clear Read Hub is a platform for readability analysis. Users upload documents (PDF or
@@ -247,3 +248,14 @@ MongoDB and Redis, `QUEUE_BACKEND=rq`, and a secret manager for `JWT_SECRET_KEY`
 ## Authors
 
 - [Luigi Davila](https://github.com/luigi-dv)
+
+## License
+
+Clear Read Hub is licensed under the [Apache License, Version 2.0](LICENSE). See
+[NOTICE](NOTICE) for attribution.
+
+Third-party dependencies keep their own licenses. Note that
+[PyMuPDF](https://pymupdf.readthedocs.io/), used for PDF text extraction, is
+available under the AGPL-3.0 or a commercial license from Artifex: distributing or
+hosting the service with it may carry AGPL obligations. PDF extraction sits behind the
+`TextExtractor` port, so it can be swapped for a permissively licensed library.
