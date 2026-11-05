@@ -76,26 +76,21 @@ jobs:
           AZ_STORAGE_CONNECTION_STRING: ${{ env.AZURITE_CONNECTION_STRING }}
         run: pytest -m integration -rs
 
-  docker:
+  compose:
+    # Runs the README quickstart: the full stack, the demo and every test in Docker
     runs-on: ubuntu-latest
     needs: [lint, test]
-    services:
-      mongodb:
-        image: mongo:7
-        ports: ["27017:27017"]
     steps:
       - uses: actions/checkout@v4
-      - name: Build the Docker image
-        run: docker build . --file Dockerfile --tag clear-read-hub:ci
-      - name: Smoke test the image
-        run: |
-          docker run -d --name api --network host \
-            -e JWT_SECRET_KEY=ci-secret-key-that-is-long-enough-123456 \
-            -e MONGODB_URI=mongodb://127.0.0.1:27017 \
-            clear-read-hub:ci
-          for i in $(seq 1 30); do
-            curl -fs http://127.0.0.1:8000/health/ready && exit 0
-            sleep 1
-          done
-          docker logs api
-          exit 1
+      - name: Start the stack
+        run: docker compose up -d --build --wait
+      - name: End to end demo
+        run: docker compose run --rm demo
+      - name: All tests inside Docker
+        run: docker compose run --rm tests
+      - name: Logs
+        if: failure()
+        run: docker compose logs
+      - name: Stop the stack
+        if: always()
+        run: docker compose down -v

@@ -42,3 +42,10 @@ def test_reads_environment(monkeypatch):
 def test_secret_is_not_printed():
     settings = ServiceConfig(_env_file=None, JWT_SECRET_KEY=TEST_SECRET)
     assert TEST_SECRET not in repr(settings)
+
+
+def test_insecure_development_secret_is_rejected_in_production():
+    secret = "insecure-local-development-secret-do-not-use-in-production"
+    assert ServiceConfig(_env_file=None, JWT_SECRET_KEY=secret)
+    with pytest.raises(ValidationError, match="real JWT_SECRET_KEY"):
+        ServiceConfig(_env_file=None, JWT_SECRET_KEY=secret, ENVIRONMENT="production")

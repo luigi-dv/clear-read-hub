@@ -9,6 +9,8 @@ from functools import lru_cache
 from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+INSECURE_SECRET_PREFIX = "insecure-"  # noqa: S105 - a marker, not a secret
+
 
 class Environment(StrEnum):
     DEVELOPMENT = "development"
@@ -91,6 +93,15 @@ class ServiceConfig(BaseSettings):
             raise ValueError(
                 "AZ_STORAGE_CONNECTION_STRING is required when STORAGE_BACKEND=azure"
             )
+        return self
+
+    @model_validator(mode="after")
+    def check_production_secret(self) -> "ServiceConfig":
+        # The local Docker Compose stack ships a public development secret
+        if self.ENVIRONMENT == Environment.PRODUCTION and (
+            self.JWT_SECRET_KEY.get_secret_value().startswith(INSECURE_SECRET_PREFIX)
+        ):
+            raise ValueError("Set a real JWT_SECRET_KEY in production")
         return self
 
     @property
